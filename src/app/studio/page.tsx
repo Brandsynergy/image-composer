@@ -87,8 +87,14 @@ export default function PhotoStudio() {
         });
         const data = await res.json();
         if (data.error) { setError(data.error); break; }
-        const url = Array.isArray(data.output) ? data.output[0] : data.output;
-        if (url) results.push(url);
+        // API now always returns { output: "https://..." } as a plain string
+        const url = typeof data.output === 'string' ? data.output : (Array.isArray(data.output) ? data.output[0] : null);
+        if (url && typeof url === 'string' && url.startsWith('http')) {
+          results.push(url);
+        } else {
+          setError(`Unexpected response format. Got: ${JSON.stringify(data).slice(0, 200)}`);
+          break;
+        }
       }
 
       if (results.length > 0) {
@@ -104,7 +110,7 @@ export default function PhotoStudio() {
         })));
       }
     } catch (err) {
-      setError('Generation failed. Check your API key and try again.');
+      setError(`Generation failed: ${err instanceof Error ? err.message : 'Check your API key and try again.'}`);
     }
     setIsGenerating(false);
   };

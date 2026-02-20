@@ -1,6 +1,41 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Replicate from 'replicate';
 
+// Extract a plain URL string from Replicate's output (handles FileOutput, arrays, strings)
+function extractUrl(output: unknown): string | null {
+  if (!output) return null;
+
+  // If it's an array, grab the first element and recurse
+  if (Array.isArray(output)) {
+    return extractUrl(output[0]);
+  }
+
+  // FileOutput / ReadableStream / object with .url()
+  if (typeof output === 'object' && output !== null) {
+    // FileOutput has a url() method in some SDK versions
+    if ('url' in output && typeof (output as Record<string, unknown>).url === 'function') {
+      return String((output as { url: () => string }).url());
+    }
+    // Or it might have a .href property
+    if ('href' in output) {
+      return String((output as { href: string }).href);
+    }
+  }
+
+  // Plain string URL
+  if (typeof output === 'string' && output.startsWith('http')) {
+    return output;
+  }
+
+  // Last resort: coerce to string and check if it looks like a URL
+  const str = String(output);
+  if (str.startsWith('http')) {
+    return str;
+  }
+
+  return null;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -22,16 +57,7 @@ export async function POST(req: NextRequest) {
 
     const replicate = new Replicate({ auth: apiKey });
 
-    // Map quality to model parameters
-    const qualityMap: Record<string, { steps?: number; guidance?: number }> = {
-      standard: { steps: 25, guidance: 3 },
-      hd: { steps: 35, guidance: 3.5 },
-      ultra: { steps: 50, guidance: 4 },
-    };
-
-    const qualitySettings = qualityMap[quality] || qualityMap.hd;
-
-    // Map aspect ratio to width/height
+    // Map aspect ratio to width/height for fallback models
     const sizeMap: Record<string, { width: number; height: number }> = {
       '1:1': { width: 1024, height: 1024 },
       '4:5': { width: 896, height: 1120 },
@@ -40,33 +66,33 @@ export async function POST(req: NextRequest) {
       '3:4': { width: 896, height: 1184 },
       '21:9': { width: 1536, height: 640 },
     };
-
     const size = sizeMap[aspectRatio] || sizeMap['4:5'];
 
-    // Use FLUX 1.1 Pro Ultra as primary (widely available), fallback gracefully
-    const input: Record<string, unknown> = {
-      prompt,
-      aspect_ratio: aspectRatio,
-      output_format: 'png',
-      safety_tolerance: 2,
-    };
-
-    // Add seed for character consistency if provided
-    if (seed) {
-      input.seed = seed;
-    }
-
     let output: unknown;
+    let modelUsed = '';
+    const errors: string[] = [];
 
+    // --- Try FLUX Schnell first (fastest, cheapest, most reliable) ---
     try {
-      // Try FLUX 1.1 Pro Ultra first (best quality, most available)
+      modelUsed = 'flux-schnell';
       output = await replicate.run(
-        'black-forest-labs/flux-1.1-pro-ultra' as `${string}/${string}`,
-        { input }
+        'black-forest-labs/flux-schnell' as `${string}/${string}`,
+        {
+          input: {
+            prompt,
+            num_outputs: 1,
+            aspect_ratio: aspectRatio,
+            output_format: 'png',
+            ...(seed ? { seed } : {}),
+          },
+        }
       );
-    } catch {
+    } catch (e1) {
+      errors.push(`schnell: ${e1 instanceof Error ? e1.message : String(e1)}`);
+
+      // --- Fallback: FLUX 1.1 Pro ---
       try {
-        // Fallback to FLUX 1.1 Pro
+        modelUsed = 'flux-1.1-pro';
         output = await replicate.run(
           'black-forest-labs/flux-1.1-pro' as `${string}/${string}`,
           {
@@ -79,35 +105,50 @@ export async function POST(req: NextRequest) {
             },
           }
         );
-      } catch {
+      } catch (e2) {
+        errors.push(`pro: ${e2 instanceof Error ? e2.message : String(e2)}`);
+
+        // --- Fallback: FLUX 1.1 Pro Ultra ---
         try {
-          // Fallback to FLUX Schnell (free/cheap, always available)
+          modelUsed = 'flux-1.1-pro-ultra';
           output = await replicate.run(
-            'black-forest-labs/flux-schnell' as `${string}/${string}`,
+            'black-forest-labs/flux-1.1-pro-ultra' as `${string}/${string}`,
             {
               input: {
                 prompt,
-                num_outputs: 1,
                 aspect_ratio: aspectRatio,
                 output_format: 'png',
+                safety_tolerance: 2,
                 ...(seed ? { seed } : {}),
               },
             }
           );
-        } catch (schnellError) {
+        } catch (e3) {
+          errors.push(`ultra: ${e3 instanceof Error ? e3.message : String(e3)}`);
           return NextResponse.json(
-            { error: `All generation models failed. Please check your API key and billing. Details: ${schnellError instanceof Error ? schnellError.message : 'Unknown error'}` },
+            { error: `All models failed. Check your API key and billing at replicate.com. Errors: ${errors.join(' | ')}` },
             { status: 500 }
           );
         }
       }
     }
 
-    return NextResponse.json({ output });
+    // Convert output to a plain URL string
+    const imageUrl = extractUrl(output);
+
+    if (!imageUrl) {
+      console.error('Could not extract URL from output:', typeof output, JSON.stringify(output).slice(0, 500));
+      return NextResponse.json(
+        { error: `Generation completed but could not extract image URL. Raw type: ${typeof output}` },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ output: imageUrl, model: modelUsed });
   } catch (error) {
     console.error('Generation error:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Generation failed' },
+      { error: error instanceof Error ? error.message : 'Generation failed unexpectedly' },
       { status: 500 }
     );
   }

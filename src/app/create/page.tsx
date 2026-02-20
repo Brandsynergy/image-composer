@@ -112,10 +112,9 @@ export default function CreateModel() {
           }),
         });
         const data = await res.json();
-        if (data.output) {
-          const imageUrl = Array.isArray(data.output) ? data.output[0] : data.output;
-          tempModel.thumbnail = imageUrl;
-          tempModel.referenceImages = [imageUrl];
+        if (data.output && typeof data.output === 'string' && data.output.startsWith('http')) {
+          tempModel.thumbnail = data.output;
+          tempModel.referenceImages = [data.output];
         }
       } catch (err) {
         console.error('Generation failed:', err);
