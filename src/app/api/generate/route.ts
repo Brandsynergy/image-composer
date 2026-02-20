@@ -36,10 +36,103 @@ function extractUrl(output: unknown): string | null {
   return null;
 }
 
+type ModelId = 'flux-2-pro' | 'flux-2-flex' | 'flux-1.1-pro-ultra' | 'flux-schnell';
+
+const MODEL_MAP: Record<ModelId, `${string}/${string}`> = {
+  'flux-2-pro': 'black-forest-labs/flux-2-pro' as `${string}/${string}`,
+  'flux-2-flex': 'black-forest-labs/flux-2-flex' as `${string}/${string}`,
+  'flux-1.1-pro-ultra': 'black-forest-labs/flux-1.1-pro-ultra' as `${string}/${string}`,
+  'flux-schnell': 'black-forest-labs/flux-schnell' as `${string}/${string}`,
+};
+
+// Build the correct input payload per model
+function buildInput(
+  modelId: ModelId,
+  opts: {
+    prompt: string;
+    aspectRatio: string;
+    seed?: number;
+    outputFormat?: string;
+    outputQuality?: number;
+    promptUpsampling?: boolean;
+    raw?: boolean;
+    steps?: number;
+    guidance?: number;
+  }
+) {
+  const { prompt, aspectRatio, seed, outputFormat = 'png', outputQuality = 90, promptUpsampling, raw, steps, guidance } = opts;
+
+  const base: Record<string, unknown> = {
+    prompt,
+    output_format: outputFormat,
+    ...(seed ? { seed } : {}),
+  };
+
+  switch (modelId) {
+    case 'flux-2-pro':
+      return {
+        ...base,
+        aspect_ratio: aspectRatio,
+        output_quality: outputQuality,
+        ...(promptUpsampling !== undefined ? { prompt_upsampling: promptUpsampling } : {}),
+        safety_tolerance: 2,
+      };
+    case 'flux-2-flex':
+      return {
+        ...base,
+        aspect_ratio: aspectRatio,
+        output_quality: outputQuality,
+        ...(steps ? { steps } : {}),
+        ...(guidance ? { guidance } : {}),
+      };
+    case 'flux-1.1-pro-ultra':
+      return {
+        ...base,
+        aspect_ratio: aspectRatio,
+        output_quality: outputQuality,
+        ...(raw !== undefined ? { raw } : {}),
+        safety_tolerance: 2,
+      };
+    case 'flux-schnell':
+      return {
+        ...base,
+        num_outputs: 1,
+        aspect_ratio: aspectRatio,
+      };
+    default:
+      return base;
+  }
+}
+
+async function runModel(
+  replicate: Replicate,
+  modelId: ModelId,
+  opts: Parameters<typeof buildInput>[1]
+): Promise<{ output: unknown; model: string }> {
+  const input = buildInput(modelId, opts);
+  const output = await replicate.run(MODEL_MAP[modelId], { input });
+  return { output, model: modelId };
+}
+
+// Fallback order: requested → flux-2-pro → flux-1.1-pro-ultra → flux-schnell
+const FALLBACK_ORDER: ModelId[] = ['flux-2-pro', 'flux-1.1-pro-ultra', 'flux-schnell'];
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { prompt, aspectRatio = '4:5', quality = 'hd', apiKey, seed } = body;
+    const {
+      prompt,
+      aspectRatio = '4:5',
+      apiKey,
+      seed,
+      model = 'flux-2-pro',
+      outputFormat = 'png',
+      outputQuality = 90,
+      promptUpsampling,
+      raw,
+      steps,
+      guidance,
+    } = body;
 
     if (!apiKey) {
       return NextResponse.json(
@@ -56,95 +149,42 @@ export async function POST(req: NextRequest) {
     }
 
     const replicate = new Replicate({ auth: apiKey });
+    const opts = { prompt, aspectRatio, seed, outputFormat, outputQuality, promptUpsampling, raw, steps, guidance };
 
-    // Map aspect ratio to width/height for fallback models
-    const sizeMap: Record<string, { width: number; height: number }> = {
-      '1:1': { width: 1024, height: 1024 },
-      '4:5': { width: 896, height: 1120 },
-      '9:16': { width: 768, height: 1344 },
-      '16:9': { width: 1344, height: 768 },
-      '3:4': { width: 896, height: 1184 },
-      '21:9': { width: 1536, height: 640 },
-    };
-    const size = sizeMap[aspectRatio] || sizeMap['4:5'];
-
-    let output: unknown;
-    let modelUsed = '';
+    let result: { output: unknown; model: string } | null = null;
     const errors: string[] = [];
 
-    // --- Try FLUX Schnell first (fastest, cheapest, most reliable) ---
-    try {
-      modelUsed = 'flux-schnell';
-      output = await replicate.run(
-        'black-forest-labs/flux-schnell' as `${string}/${string}`,
-        {
-          input: {
-            prompt,
-            num_outputs: 1,
-            aspect_ratio: aspectRatio,
-            output_format: 'png',
-            ...(seed ? { seed } : {}),
-          },
-        }
-      );
-    } catch (e1) {
-      errors.push(`schnell: ${e1 instanceof Error ? e1.message : String(e1)}`);
+    // Build unique fallback chain: requested model first, then remaining in order
+    const chain: ModelId[] = [model as ModelId, ...FALLBACK_ORDER.filter((m) => m !== model)];
 
-      // --- Fallback: FLUX 1.1 Pro ---
+    for (const mid of chain) {
       try {
-        modelUsed = 'flux-1.1-pro';
-        output = await replicate.run(
-          'black-forest-labs/flux-1.1-pro' as `${string}/${string}`,
-          {
-            input: {
-              prompt,
-              width: size.width,
-              height: size.height,
-              output_format: 'png',
-              ...(seed ? { seed } : {}),
-            },
-          }
-        );
-      } catch (e2) {
-        errors.push(`pro: ${e2 instanceof Error ? e2.message : String(e2)}`);
-
-        // --- Fallback: FLUX 1.1 Pro Ultra ---
-        try {
-          modelUsed = 'flux-1.1-pro-ultra';
-          output = await replicate.run(
-            'black-forest-labs/flux-1.1-pro-ultra' as `${string}/${string}`,
-            {
-              input: {
-                prompt,
-                aspect_ratio: aspectRatio,
-                output_format: 'png',
-                safety_tolerance: 2,
-                ...(seed ? { seed } : {}),
-              },
-            }
-          );
-        } catch (e3) {
-          errors.push(`ultra: ${e3 instanceof Error ? e3.message : String(e3)}`);
-          return NextResponse.json(
-            { error: `All models failed. Check your API key and billing at replicate.com. Errors: ${errors.join(' | ')}` },
-            { status: 500 }
-          );
-        }
+        result = await runModel(replicate, mid, opts);
+        break;
+      } catch (e) {
+        errors.push(`${mid}: ${e instanceof Error ? e.message : String(e)}`);
       }
     }
 
-    // Convert output to a plain URL string
-    const imageUrl = extractUrl(output);
-
-    if (!imageUrl) {
-      console.error('Could not extract URL from output:', typeof output, JSON.stringify(output).slice(0, 500));
+    if (!result) {
       return NextResponse.json(
-        { error: `Generation completed but could not extract image URL. Raw type: ${typeof output}` },
+        { error: `All models failed. Check your API key and billing at replicate.com. Errors: ${errors.join(' | ')}` },
         { status: 500 }
       );
     }
 
-    return NextResponse.json({ output: imageUrl, model: modelUsed });
+    // Convert output to a plain URL string
+    const imageUrl = extractUrl(result.output);
+
+    if (!imageUrl) {
+      console.error('Could not extract URL from output:', typeof result.output, JSON.stringify(result.output).slice(0, 500));
+      return NextResponse.json(
+        { error: `Generation completed but could not extract image URL. Raw type: ${typeof result.output}` },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ output: imageUrl, model: result.model });
   } catch (error) {
     console.error('Generation error:', error);
     return NextResponse.json(

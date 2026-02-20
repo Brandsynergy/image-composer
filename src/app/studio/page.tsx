@@ -53,6 +53,15 @@ export default function PhotoStudio() {
   const [promptPreview, setPromptPreview] = useState('');
   const [error, setError] = useState('');
 
+  // Engine & quality controls
+  const [engine, setEngine] = useState<'flux-2-pro' | 'flux-2-flex' | 'flux-1.1-pro-ultra' | 'flux-schnell'>('flux-2-pro');
+  const [promptUpsampling, setPromptUpsampling] = useState(true);
+  const [rawMode, setRawMode] = useState(false);
+  const [outputFormat, setOutputFormat] = useState<'png' | 'jpg' | 'webp'>('png');
+  const [outputQuality, setOutputQuality] = useState(95);
+  const [flexSteps, setFlexSteps] = useState(28);
+  const [flexGuidance, setFlexGuidance] = useState(3.5);
+
   const selectedModel = models.find((m) => m.id === selectedModelId);
 
   const updateScene = (updates: Partial<SceneConfig>) => setScene((p) => ({ ...p, ...updates }));
@@ -80,9 +89,14 @@ export default function PhotoStudio() {
           body: JSON.stringify({
             prompt,
             aspectRatio: output.aspectRatio,
-            quality: output.quality,
             apiKey: settings.replicateApiKey,
             seed: selectedModel.seed,
+            model: engine,
+            outputFormat,
+            outputQuality,
+            ...(engine === 'flux-2-pro' ? { promptUpsampling } : {}),
+            ...(engine === 'flux-1.1-pro-ultra' ? { raw: rawMode } : {}),
+            ...(engine === 'flux-2-flex' ? { steps: flexSteps, guidance: flexGuidance } : {}),
           }),
         });
         const data = await res.json();
@@ -228,6 +242,97 @@ export default function PhotoStudio() {
               </TabsContent>
 
               <TabsContent value="output" className="space-y-4 mt-4">
+                {/* AI Engine Selector */}
+                <FieldGroup label="AI Engine" icon={Wand2}>
+                  <div className="grid grid-cols-2 gap-2">
+                    {([
+                      { id: 'flux-2-pro' as const, name: 'FLUX 2 Pro', desc: 'Best quality' },
+                      { id: 'flux-2-flex' as const, name: 'FLUX 2 Flex', desc: 'Fast + tunable' },
+                      { id: 'flux-1.1-pro-ultra' as const, name: 'FLUX Ultra', desc: '4MP RAW mode' },
+                      { id: 'flux-schnell' as const, name: 'FLUX Schnell', desc: 'Fastest / free' },
+                    ]).map((eng) => (
+                      <button
+                        key={eng.id}
+                        onClick={() => setEngine(eng.id)}
+                        className={`p-2.5 rounded-lg border text-left transition-all ${
+                          engine === eng.id
+                            ? 'bg-violet-600/20 border-violet-500/50 text-white'
+                            : 'bg-white/[0.02] border-white/[0.06] text-zinc-500 hover:bg-white/[0.05]'
+                        }`}
+                      >
+                        <span className="text-[11px] font-medium block">{eng.name}</span>
+                        <span className="text-[9px] text-zinc-500">{eng.desc}</span>
+                      </button>
+                    ))}
+                  </div>
+                </FieldGroup>
+
+                {/* Prompt Upsampling (FLUX 2 Pro only) */}
+                {engine === 'flux-2-pro' && (
+                  <div className="flex items-center justify-between p-2.5 rounded-lg bg-white/[0.02] border border-white/[0.06]">
+                    <div>
+                      <span className="text-[11px] font-medium text-white block">Prompt Upsampling</span>
+                      <span className="text-[9px] text-zinc-500">AI enhances your prompt for better results</span>
+                    </div>
+                    <button
+                      onClick={() => setPromptUpsampling(!promptUpsampling)}
+                      className={`w-9 h-5 rounded-full transition-colors ${
+                        promptUpsampling ? 'bg-violet-600' : 'bg-zinc-700'
+                      }`}
+                    >
+                      <div className={`w-4 h-4 rounded-full bg-white transition-transform mx-0.5 ${
+                        promptUpsampling ? 'translate-x-4' : 'translate-x-0'
+                      }`} />
+                    </button>
+                  </div>
+                )}
+
+                {/* RAW Mode (FLUX Ultra only) */}
+                {engine === 'flux-1.1-pro-ultra' && (
+                  <div className="flex items-center justify-between p-2.5 rounded-lg bg-white/[0.02] border border-white/[0.06]">
+                    <div>
+                      <span className="text-[11px] font-medium text-white block">RAW Mode</span>
+                      <span className="text-[9px] text-zinc-500">Less AI post-processing, more natural</span>
+                    </div>
+                    <button
+                      onClick={() => setRawMode(!rawMode)}
+                      className={`w-9 h-5 rounded-full transition-colors ${
+                        rawMode ? 'bg-violet-600' : 'bg-zinc-700'
+                      }`}
+                    >
+                      <div className={`w-4 h-4 rounded-full bg-white transition-transform mx-0.5 ${
+                        rawMode ? 'translate-x-4' : 'translate-x-0'
+                      }`} />
+                    </button>
+                  </div>
+                )}
+
+                {/* Steps & Guidance (FLUX 2 Flex only) */}
+                {engine === 'flux-2-flex' && (
+                  <div className="space-y-3">
+                    <div>
+                      <div className="flex justify-between mb-1">
+                        <Label className="text-[10px] text-zinc-500">Steps: {flexSteps}</Label>
+                      </div>
+                      <input
+                        type="range" min={10} max={50} value={flexSteps}
+                        onChange={(e) => setFlexSteps(Number(e.target.value))}
+                        className="w-full accent-violet-600 h-1"
+                      />
+                    </div>
+                    <div>
+                      <div className="flex justify-between mb-1">
+                        <Label className="text-[10px] text-zinc-500">Guidance: {flexGuidance}</Label>
+                      </div>
+                      <input
+                        type="range" min={1} max={10} step={0.5} value={flexGuidance}
+                        onChange={(e) => setFlexGuidance(Number(e.target.value))}
+                        className="w-full accent-violet-600 h-1"
+                      />
+                    </div>
+                  </div>
+                )}
+
                 <FieldGroup label="Aspect Ratio" icon={ImageIcon}>
                   <div className="grid grid-cols-3 gap-2">
                     {ASPECT_RATIOS.map((ar) => (
@@ -246,23 +351,40 @@ export default function PhotoStudio() {
                     ))}
                   </div>
                 </FieldGroup>
-                <FieldGroup label="Quality" icon={Sparkles}>
+
+                {/* Output Format */}
+                <FieldGroup label="Format" icon={Aperture}>
                   <div className="flex gap-2">
-                    {(['standard', 'hd', 'ultra'] as const).map((q) => (
+                    {(['png', 'jpg', 'webp'] as const).map((f) => (
                       <button
-                        key={q}
-                        onClick={() => setOutput((p) => ({ ...p, quality: q }))}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all capitalize ${
-                          output.quality === q
+                        key={f}
+                        onClick={() => setOutputFormat(f)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all uppercase ${
+                          outputFormat === f
                             ? 'bg-violet-600/20 border-violet-500/50 text-violet-300'
                             : 'bg-white/[0.02] border-white/[0.06] text-zinc-500 hover:bg-white/[0.05]'
                         }`}
                       >
-                        {q}
+                        {f}
                       </button>
                     ))}
                   </div>
                 </FieldGroup>
+
+                {/* Quality Slider */}
+                {outputFormat !== 'png' && (
+                  <div>
+                    <div className="flex justify-between mb-1">
+                      <Label className="text-[10px] text-zinc-500">Compression Quality: {outputQuality}%</Label>
+                    </div>
+                    <input
+                      type="range" min={50} max={100} value={outputQuality}
+                      onChange={(e) => setOutputQuality(Number(e.target.value))}
+                      className="w-full accent-violet-600 h-1"
+                    />
+                  </div>
+                )}
+
                 <FieldGroup label="Count" icon={Copy}>
                   <div className="flex gap-2">
                     {[1, 2, 4].map((n) => (
