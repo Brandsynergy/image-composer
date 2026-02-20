@@ -1,36 +1,42 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# IMAGE COMPOSER — AI Model & Influencer Generation Studio
 
-## Getting Started
+Professional-grade standalone app for creating hyper-realistic AI models (face, body, style) and generating photo content for advertising, brands, campaigns, and social media influencers.
 
-First, run the development server:
+## Features
+
+- **AI Model Creator** — Multi-step wizard to define face, body, style, and influencer DNA
+- **Photo Studio** — Full scene control: pose, lighting, outfit, camera angle, mood, background
+- **Viral Presets** — One-click presets for Editorial, Street Style, Golden Hour, Luxury, Fitness, Beauty, Travel, Night Out
+- **Gallery** — Browse, filter, favorite, and download all generated content
+- **Campaign Builder** — Create branded content series with brand colors, mood, and platform targeting
+- **Export Presets** — Instagram, TikTok, YouTube, LinkedIn, Pinterest, Print-ready formats
+- **Prompt Engine** — Automatically converts UI selections into optimized professional photography prompts
+- **Character Consistency** — Seed locking and persona DNA injection for consistent AI model identity
+
+## Quick Start
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Setup
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Get a Replicate API token at [replicate.com/account/api-tokens](https://replicate.com/account/api-tokens)
+2. Enter it in the app when prompted, or go to Settings
+3. Create your first AI model in the Model Creator
+4. Generate photos in the Photo Studio
 
-## Learn More
+## Tech Stack
 
-To learn more about Next.js, take a look at the following resources:
+- **Next.js 14** (App Router) + TypeScript
+- **Tailwind CSS** + **shadcn/ui** — Professional dark-theme UI
+- **Replicate API** — FLUX Pro for photorealistic generation
+- **Zustand** — State management with localStorage persistence
+- **Standalone** — No database required, runs entirely in the browser + API calls
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## License
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+MIT
