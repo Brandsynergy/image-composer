@@ -20,7 +20,7 @@ import {
 import {
   Camera, Sparkles, Wand2, Download, Heart, Users, Zap,
   Sun, MapPin, PersonStanding, Shirt, Aperture, Move3D,
-  Palette, Clock, ImageIcon, RotateCcw, Copy,
+  Palette, Clock, ImageIcon, RotateCcw, Copy, Trash2,
 } from 'lucide-react';
 
 function OptionPicker({ options, value, onChange }: { options: string[]; value: string; onChange: (v: string) => void }) {
@@ -478,23 +478,27 @@ export default function PhotoStudio() {
         {generatedUrls.length > 0 ? (
           <div className="grid grid-cols-2 gap-4">
             {generatedUrls.map((url, i) => (
-              <div key={`${url}-${i}`} className="group relative rounded-xl overflow-hidden border border-white/[0.06] hover:border-violet-500/30 transition-all bg-white/[0.02]">
+              <div key={`${url}-${i}`} className="rounded-xl overflow-hidden border border-white/[0.06] hover:border-violet-500/30 transition-all bg-white/[0.02]">
                 <div className="aspect-[4/5]">
                   <img src={url} alt="" className="w-full h-full object-cover" />
                 </div>
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity">
-                  <div className="flex gap-2">
-                    <a
-                      href={url}
-                      download
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white/10 backdrop-blur-sm text-white text-[11px] font-medium hover:bg-white/20 transition-colors"
-                    >
-                      <Download className="h-3 w-3" /> Download
-                    </a>
-                  </div>
+                <div className="flex items-center justify-between px-3 py-2.5 border-t border-white/[0.04]">
+                  <a
+                    href={url}
+                    download
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-600/20 text-violet-300 text-[11px] font-medium hover:bg-violet-600/30 transition-colors"
+                  >
+                    <Download className="h-3.5 w-3.5" /> Download
+                  </a>
+                  <button
+                    onClick={() => setGeneratedUrls((prev) => prev.filter((_, idx) => idx !== i))}
+                    className="p-1.5 rounded-lg hover:bg-red-500/10 transition-colors"
+                    title="Remove"
+                  >
+                    <Trash2 className="h-4 w-4 text-zinc-500 hover:text-red-400" />
+                  </button>
                 </div>
               </div>
             ))}

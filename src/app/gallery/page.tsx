@@ -94,49 +94,48 @@ export default function Gallery() {
           {filteredImages.map((image) => (
             <div
               key={image.id}
-              className="group relative rounded-xl overflow-hidden border border-white/[0.06] hover:border-violet-500/30 transition-all cursor-pointer bg-white/[0.02]"
-              onClick={() => setSelectedImage(image.id)}
+              className="group rounded-xl overflow-hidden border border-white/[0.06] hover:border-violet-500/30 transition-all bg-white/[0.02]"
             >
-              <div className="aspect-[4/5]">
-                <img src={image.url} alt="" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy" />
+              {/* Image — click to open lightbox */}
+              <div className="relative cursor-pointer" onClick={() => setSelectedImage(image.id)}>
+                <div className="aspect-[4/5]">
+                  <img src={image.url} alt="" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.02]" loading="lazy" />
+                </div>
+                {image.isFavorite && (
+                  <div className="absolute top-2 right-2">
+                    <Heart className="h-4 w-4 text-rose-400 fill-rose-400 drop-shadow" />
+                  </div>
+                )}
               </div>
 
-              {/* Overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-
-              {/* Favorite indicator */}
-              {image.isFavorite && (
-                <div className="absolute top-2 right-2">
-                  <Heart className="h-4 w-4 text-rose-400 fill-rose-400" />
-                </div>
-              )}
-
-              {/* Bottom info */}
-              <div className="absolute bottom-2 left-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <div className="flex items-center justify-between">
-                  <div className="flex gap-1">
-                    {image.tags.slice(0, 2).map((tag) => (
-                      <Badge key={tag} variant="secondary" className="bg-black/40 text-white text-[9px] backdrop-blur-sm border-0">{tag}</Badge>
-                    ))}
-                  </div>
-                  <div className="flex gap-1">
-                    <button
-                      onClick={(e) => { e.stopPropagation(); toggleFavorite(image.id); }}
-                      className="p-1 rounded-md bg-black/40 backdrop-blur-sm hover:bg-black/60 transition-colors"
-                    >
-                      <Heart className={`h-3 w-3 ${image.isFavorite ? 'text-rose-400 fill-rose-400' : 'text-white'}`} />
-                    </button>
-                    <a
-                      href={image.url}
-                      download
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                      className="p-1 rounded-md bg-black/40 backdrop-blur-sm hover:bg-black/60 transition-colors"
-                    >
-                      <Download className="h-3 w-3 text-white" />
-                    </a>
-                  </div>
+              {/* Action bar — always visible */}
+              <div className="flex items-center justify-between px-3 py-2.5 bg-white/[0.02] border-t border-white/[0.04]">
+                <button
+                  onClick={() => toggleFavorite(image.id)}
+                  className="p-1.5 rounded-lg hover:bg-white/[0.06] transition-colors"
+                  title={image.isFavorite ? 'Unfavorite' : 'Favorite'}
+                >
+                  <Heart className={`h-4 w-4 ${image.isFavorite ? 'text-rose-400 fill-rose-400' : 'text-zinc-500 hover:text-rose-400'}`} />
+                </button>
+                <div className="flex items-center gap-1">
+                  <a
+                    href={image.url}
+                    download
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-600/20 text-violet-300 text-[11px] font-medium hover:bg-violet-600/30 transition-colors"
+                  >
+                    <Download className="h-3.5 w-3.5" /> Save
+                  </a>
+                  <button
+                    onClick={() => {
+                      if (window.confirm('Delete this image?')) deleteImage(image.id);
+                    }}
+                    className="p-1.5 rounded-lg hover:bg-red-500/10 transition-colors"
+                    title="Delete"
+                  >
+                    <Trash2 className="h-4 w-4 text-zinc-500 hover:text-red-400" />
+                  </button>
                 </div>
               </div>
             </div>
@@ -217,14 +216,6 @@ export default function Gallery() {
                       </div>
                     </div>
                   )}
-                </div>
-
-                {/* Prompt */}
-                <div>
-                  <span className="text-[10px] text-zinc-500 uppercase tracking-wider block mb-1">Prompt</span>
-                  <p className="text-[11px] text-zinc-400 font-mono leading-relaxed max-h-24 overflow-y-auto">
-                    {selectedImg.prompt}
-                  </p>
                 </div>
 
                 {/* Export Options */}
