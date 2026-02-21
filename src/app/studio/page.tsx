@@ -44,7 +44,7 @@ function OptionPicker({ options, value, onChange }: { options: string[]; value: 
 }
 
 export default function PhotoStudio() {
-  const { models, settings, addImage, addImages, toggleFavorite, images } = useAppStore();
+  const { models, settings, addImage, addImages, toggleFavorite, images, _hasHydrated } = useAppStore();
   const [selectedModelId, setSelectedModelId] = useState<string>(models[0]?.id || '');
   const [scene, setScene] = useState<SceneConfig>({ ...defaultScene });
   const [output, setOutput] = useState<OutputConfig>({ ...defaultOutput });
@@ -73,6 +73,7 @@ export default function PhotoStudio() {
 
   const handleGenerate = async () => {
     if (!selectedModel) { setError('Please select or create an AI model first.'); return; }
+    if (!_hasHydrated) { setError('Loading saved settings… please try again.'); return; }
     if (!settings.replicateApiKey) { setError('Please set your Replicate API key in Settings.'); return; }
 
     setError('');

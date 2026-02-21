@@ -60,6 +60,10 @@ export const defaultOutput: OutputConfig = {
 
 // ─── Store Interface ───────────────────────────────────────────
 interface AppStore {
+  // Hydration
+  _hasHydrated: boolean;
+  setHasHydrated: (v: boolean) => void;
+
   // Models
   models: AIModel[];
   activeModelId: string | null;
@@ -104,7 +108,11 @@ interface AppStore {
 export const useAppStore = create<AppStore>()(
   persist(
     (set, get) => ({
-      // ── Models ──────────────────────────────────────────────
+      // ── Hydration ─────────────────────────────────────────────
+      _hasHydrated: false,
+      setHasHydrated: (v) => set({ _hasHydrated: v }),
+
+      // ── Models ────────────────────────────────────────────────
       models: [],
       activeModelId: null,
 
@@ -263,6 +271,9 @@ export const useAppStore = create<AppStore>()(
         campaigns: state.campaigns,
         settings: state.settings,
       }),
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
+      },
     }
   )
 );
