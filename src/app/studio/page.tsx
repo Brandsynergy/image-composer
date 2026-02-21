@@ -432,17 +432,6 @@ export default function PhotoStudio() {
               </TabsContent>
             </Tabs>
 
-            {/* Custom Prompt */}
-            <div>
-              <Label className="text-[10px] text-zinc-500 uppercase tracking-wider mb-1 block">Custom Prompt Addition</Label>
-              <Textarea
-                value={scene.customPrompt}
-                onChange={(e) => updateScene({ customPrompt: e.target.value })}
-                placeholder="Add any custom details to enhance the generation..."
-                className="bg-white/[0.03] border-white/[0.06] text-white text-xs placeholder:text-zinc-600 min-h-[60px] resize-none"
-              />
-            </div>
-
             {/* Generate Button */}
             <Button
               onClick={handleGenerate}
@@ -484,14 +473,6 @@ export default function PhotoStudio() {
             </Button>
           )}
         </div>
-
-        {/* Prompt Preview */}
-        {promptPreview && (
-          <div className="mb-4 p-3 rounded-lg bg-white/[0.02] border border-white/[0.06]">
-            <Label className="text-[10px] text-zinc-500 uppercase tracking-wider mb-1 block">Last Prompt</Label>
-            <p className="text-[11px] text-zinc-400 font-mono leading-relaxed line-clamp-3">{promptPreview}</p>
-          </div>
-        )}
 
         {/* Results Grid */}
         {generatedUrls.length > 0 ? (
