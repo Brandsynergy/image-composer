@@ -46,8 +46,13 @@ const MODEL_MAP: Record<ModelId, `${string}/${string}`> = {
   'flux-schnell': 'black-forest-labs/flux-schnell' as `${string}/${string}`,
 };
 
-// Internal enhancement prompt — kept short to prevent Kontext from rendering text on the image
-const ENHANCEMENT_PROMPT = `Enhance this photo to 4K sharpness. Fix eyes: matching irises, round pupils, clean white sclera, sharp corneal reflections, defined eyelashes. Sharpen skin pores, hair strands, fabric weave. Remove noise, grain, and compression artifacts. Clean teeth if visible. Keep identical pose, expression, lighting, colors, and composition. Do not add any text, words, labels, watermarks, or overlays anywhere on the image.`;
+// Internal enhancement prompt — uses direct Kontext editing language
+const ENHANCEMENT_PROMPT = [
+  'Retouch both eyes to look perfectly photorealistic with crystal-clear sharp irises, bright clean white sclera, round centered pupils, and natural catchlights.',
+  'Sharpen all fine details including individual hair strands, skin pores, eyelashes, and fabric texture to 4K clarity.',
+  'Remove all noise, grain, and compression artifacts while keeping the exact same pose, expression, outfit, background, lighting, and composition.',
+  'Do not add any text, watermarks, or overlays.',
+].join(' ');
 
 // Build the correct input payload per model
 function buildInput(
