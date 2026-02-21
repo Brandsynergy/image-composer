@@ -54,13 +54,14 @@ export default function PhotoStudio() {
   const [error, setError] = useState('');
 
   // Engine & quality controls
-  const [engine, setEngine] = useState<'flux-2-pro' | 'flux-2-flex' | 'flux-1.1-pro-ultra' | 'flux-schnell'>('flux-2-pro');
+  const [engine, setEngine] = useState<'flux-kontext-pro' | 'flux-2-pro' | 'flux-2-flex' | 'flux-1.1-pro-ultra' | 'flux-schnell'>('flux-kontext-pro');
   const [promptUpsampling, setPromptUpsampling] = useState(true);
   const [rawMode, setRawMode] = useState(false);
   const [outputFormat, setOutputFormat] = useState<'png' | 'jpg' | 'webp'>('png');
   const [outputQuality, setOutputQuality] = useState(95);
   const [flexSteps, setFlexSteps] = useState(28);
   const [flexGuidance, setFlexGuidance] = useState(3.5);
+  const [enhance, setEnhance] = useState(true);
 
   const selectedModel = models.find((m) => m.id === selectedModelId);
 
@@ -94,6 +95,7 @@ export default function PhotoStudio() {
             model: engine,
             outputFormat,
             outputQuality,
+            enhance,
             ...(engine === 'flux-2-pro' ? { promptUpsampling } : {}),
             ...(engine === 'flux-1.1-pro-ultra' ? { raw: rawMode } : {}),
             ...(engine === 'flux-2-flex' ? { steps: flexSteps, guidance: flexGuidance } : {}),
@@ -246,6 +248,7 @@ export default function PhotoStudio() {
                 <FieldGroup label="AI Engine" icon={Wand2}>
                   <div className="grid grid-cols-2 gap-2">
                     {([
+                      { id: 'flux-kontext-pro' as const, name: 'Kontext Pro', desc: 'Best sharpness' },
                       { id: 'flux-2-pro' as const, name: 'FLUX 2 Pro', desc: 'Best quality' },
                       { id: 'flux-2-flex' as const, name: 'FLUX 2 Flex', desc: 'Fast + tunable' },
                       { id: 'flux-1.1-pro-ultra' as const, name: 'FLUX Ultra', desc: '4MP RAW mode' },
@@ -402,6 +405,26 @@ export default function PhotoStudio() {
                     ))}
                   </div>
                 </FieldGroup>
+
+                {/* AI Enhancement (4K upscale via Kontext Pro) */}
+                <div className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-violet-600/10 to-fuchsia-600/10 border border-violet-500/20">
+                  <div>
+                    <span className="text-[11px] font-semibold text-white flex items-center gap-1">
+                      <Sparkles className="h-3 w-3 text-fuchsia-400" /> 4K AI Enhancement
+                    </span>
+                    <span className="text-[9px] text-zinc-400 block mt-0.5">Auto-upscale via Kontext Pro — sharper pores, hair, fabric</span>
+                  </div>
+                  <button
+                    onClick={() => setEnhance(!enhance)}
+                    className={`w-9 h-5 rounded-full transition-colors ${
+                      enhance ? 'bg-fuchsia-600' : 'bg-zinc-700'
+                    }`}
+                  >
+                    <div className={`w-4 h-4 rounded-full bg-white transition-transform mx-0.5 ${
+                      enhance ? 'translate-x-4' : 'translate-x-0'
+                    }`} />
+                  </button>
+                </div>
               </TabsContent>
             </Tabs>
 

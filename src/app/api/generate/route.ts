@@ -36,14 +36,21 @@ function extractUrl(output: unknown): string | null {
   return null;
 }
 
-type ModelId = 'flux-2-pro' | 'flux-2-flex' | 'flux-1.1-pro-ultra' | 'flux-schnell';
+type ModelId = 'flux-kontext-pro' | 'flux-2-pro' | 'flux-2-flex' | 'flux-1.1-pro-ultra' | 'flux-schnell';
 
 const MODEL_MAP: Record<ModelId, `${string}/${string}`> = {
+  'flux-kontext-pro': 'black-forest-labs/flux-kontext-pro' as `${string}/${string}`,
   'flux-2-pro': 'black-forest-labs/flux-2-pro' as `${string}/${string}`,
   'flux-2-flex': 'black-forest-labs/flux-2-flex' as `${string}/${string}`,
   'flux-1.1-pro-ultra': 'black-forest-labs/flux-1.1-pro-ultra' as `${string}/${string}`,
   'flux-schnell': 'black-forest-labs/flux-schnell' as `${string}/${string}`,
 };
+
+// 4K enhancement prompt — applied as a second Kontext Pro pass on every generated image
+const ENHANCEMENT_PROMPT = `Ultra-high-resolution 4K enhancement based strictly on the provided reference image. Absolute fidelity to original facial anatomy, proportions, and identity. Preserve expression, gaze, pose, camera angle, framing, and perspective with zero deviation. Clothing, hair, skin, and background elements must remain unchanged in structure, placement, and design.
+Recover fine-grain detail with natural realism. Enhance pores, fine lines, hair strands, eyelashes, fabric weave, seams, and material edges without introducing stylization. Maintain original color science, white balance, and tonal relationships exactly as captured. Lighting direction, intensity, contrast, and shadow behavior must match the source image precisely, with only improved clarity and expanded dynamic range. No relighting, no reshaping. Remove any grain.
+Apply controlled sharpening and high-frequency detail reconstruction. Remove compression artifacts and noise while retaining authentic texture. No smoothing, no plastic skin, no artificial gloss. Facial features must remain consistent across the entire image with coherent anatomy and clean, stable edges.
+Negative constraints: no warping, no facial drift, no added or missing anatomy, no altered hands, no distortions, no perspective shift, no text or graphics, no hallucinated detail, no stylized rendering. Output must read as a true-to-life, photorealistic upscale that matches the reference exactly, only clearer, sharper, and higher resolution.`;
 
 // Build the correct input payload per model
 function buildInput(
@@ -69,6 +76,13 @@ function buildInput(
   };
 
   switch (modelId) {
+    case 'flux-kontext-pro':
+      return {
+        ...base,
+        aspect_ratio: aspectRatio,
+        output_format: outputFormat === 'webp' ? 'jpg' : outputFormat, // Kontext supports jpg/png only
+        safety_tolerance: 2,
+      };
     case 'flux-2-pro':
       return {
         ...base,
@@ -114,8 +128,8 @@ async function runModel(
   return { output, model: modelId };
 }
 
-// Fallback order: requested → flux-2-pro → flux-1.1-pro-ultra → flux-schnell
-const FALLBACK_ORDER: ModelId[] = ['flux-2-pro', 'flux-1.1-pro-ultra', 'flux-schnell'];
+// Fallback order: requested → kontext-pro → flux-2-pro → flux-1.1-pro-ultra → flux-schnell
+const FALLBACK_ORDER: ModelId[] = ['flux-kontext-pro', 'flux-2-pro', 'flux-1.1-pro-ultra', 'flux-schnell'];
 
 export async function POST(req: NextRequest) {
   try {
@@ -125,13 +139,14 @@ export async function POST(req: NextRequest) {
       aspectRatio = '4:5',
       apiKey,
       seed,
-      model = 'flux-2-pro',
+      model = 'flux-kontext-pro',
       outputFormat = 'png',
       outputQuality = 90,
       promptUpsampling,
       raw,
       steps,
       guidance,
+      enhance = true,
     } = body;
 
     if (!apiKey) {
@@ -184,7 +199,36 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    return NextResponse.json({ output: imageUrl, model: result.model });
+    // ── Enhancement pass: run through Kontext Pro for 4K sharpening ──
+    let finalUrl = imageUrl;
+    let enhanced = false;
+
+    if (enhance) {
+      try {
+        const enhanceOutput = await replicate.run(
+          MODEL_MAP['flux-kontext-pro'],
+          {
+            input: {
+              prompt: ENHANCEMENT_PROMPT,
+              input_image: imageUrl,
+              aspect_ratio: 'match_input_image',
+              output_format: 'png',
+              safety_tolerance: 2,
+            },
+          }
+        );
+        const enhancedUrl = extractUrl(enhanceOutput);
+        if (enhancedUrl) {
+          finalUrl = enhancedUrl;
+          enhanced = true;
+        }
+      } catch (enhErr) {
+        // Enhancement failed — return the original image rather than erroring out
+        console.warn('Enhancement pass failed, returning original:', enhErr instanceof Error ? enhErr.message : enhErr);
+      }
+    }
+
+    return NextResponse.json({ output: finalUrl, model: result.model, enhanced });
   } catch (error) {
     console.error('Generation error:', error);
     return NextResponse.json(
