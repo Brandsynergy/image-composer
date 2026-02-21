@@ -406,22 +406,25 @@ export default function PhotoStudio() {
                   </div>
                 </FieldGroup>
 
-                {/* AI Enhancement (4K upscale via Kontext Pro) */}
+                {/* Premium Enhancement */}
                 <div className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-violet-600/10 to-fuchsia-600/10 border border-violet-500/20">
-                  <div>
-                    <span className="text-[11px] font-semibold text-white flex items-center gap-1">
-                      <Sparkles className="h-3 w-3 text-fuchsia-400" /> 4K AI Enhancement
-                    </span>
-                    <span className="text-[9px] text-zinc-400 block mt-0.5">Auto-upscale via Kontext Pro — sharper pores, hair, fabric</span>
+                  <div className="flex items-center gap-2">
+                    <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-fuchsia-500 to-violet-600 flex items-center justify-center">
+                      <Sparkles className="h-3.5 w-3.5 text-white" />
+                    </div>
+                    <div>
+                      <span className="text-[11px] font-semibold text-white block">PRO Enhance</span>
+                      <span className="text-[9px] text-zinc-500">4K · Eye Fix · Detail Boost</span>
+                    </div>
                   </div>
                   <button
                     onClick={() => setEnhance(!enhance)}
-                    className={`w-9 h-5 rounded-full transition-colors ${
+                    className={`w-10 h-[22px] rounded-full transition-colors ${
                       enhance ? 'bg-fuchsia-600' : 'bg-zinc-700'
                     }`}
                   >
-                    <div className={`w-4 h-4 rounded-full bg-white transition-transform mx-0.5 ${
-                      enhance ? 'translate-x-4' : 'translate-x-0'
+                    <div className={`w-[18px] h-[18px] rounded-full bg-white transition-transform mx-0.5 ${
+                      enhance ? 'translate-x-[18px]' : 'translate-x-0'
                     }`} />
                   </button>
                 </div>
