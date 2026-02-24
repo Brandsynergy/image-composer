@@ -99,8 +99,7 @@ interface AppStore {
 
   // User Auth
   user: AppUser | null;
-  signIn: (user: AppUser) => void;
-  signOut: () => void;
+  setUser: (user: AppUser | null) => void;
 
   // Defaults
   defaultFace: FaceConfig;
@@ -242,8 +241,7 @@ export const useAppStore = create<AppStore>()(
 
       // ── User Auth ─────────────────────────────────────────────
       user: null,
-      signIn: (userData) => set({ user: userData }),
-      signOut: () => set({ user: null }),
+      setUser: (userData) => set({ user: userData }),
 
       // ── Defaults ──────────────────────────────────────────────
       defaultFace,

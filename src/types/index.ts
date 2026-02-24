@@ -97,6 +97,7 @@ export interface CreditPack {
 
 // ─── User Auth ─────────────────────────────────────────────────
 export interface AppUser {
+  id: string;
   name: string;
   email: string;
 }

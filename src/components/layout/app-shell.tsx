@@ -2,6 +2,7 @@
 
 import { Sidebar } from './sidebar';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { AuthProvider } from '@/components/providers/auth-provider';
 import { useAppStore } from '@/lib/store';
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -19,13 +20,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <TooltipProvider delayDuration={0}>
-      <div className="flex min-h-screen bg-[#0a0a0b] text-white">
-        <Sidebar />
-        <main className="ml-[240px] flex-1 transition-all duration-300">
-          <div className="p-6">{children}</div>
-        </main>
-      </div>
-    </TooltipProvider>
+    <AuthProvider>
+      <TooltipProvider delayDuration={0}>
+        <div className="flex min-h-screen bg-[#0a0a0b] text-white">
+          <Sidebar />
+          <main className="ml-[240px] flex-1 transition-all duration-300">
+            <div className="p-6">{children}</div>
+          </main>
+        </div>
+      </TooltipProvider>
+    </AuthProvider>
   );
 }
