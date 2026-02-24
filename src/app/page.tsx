@@ -22,9 +22,9 @@ export default function Dashboard() {
       <div className="relative overflow-hidden rounded-2xl border border-white/[0.06] bg-gradient-to-br from-violet-600/10 via-fuchsia-600/5 to-transparent p-8">
         <div className="absolute right-0 top-0 h-64 w-64 bg-violet-500/10 blur-[100px]" />
         <div className="relative">
-          <div className="flex items-center gap-2 mb-2">
-            <img src="/icons/icon-192.png" alt="" className="h-6 w-6 rounded" />
-            <span className="text-sm font-medium text-violet-400">IMAGE COMPOSER Studio</span>
+          <div className="flex items-center gap-3 mb-3">
+            <img src="/icons/icon-192.png" alt="" className="h-14 w-14 rounded-xl" />
+            <span className="text-lg font-semibold text-violet-400">IMAGE COMPOSER Studio</span>
           </div>
           <h1 className="text-3xl font-bold tracking-tight text-white mb-2">Create Viral AI Models</h1>
           <p className="text-zinc-400 max-w-xl mb-6">
