@@ -15,28 +15,39 @@ const STORAGE_KEY = 'image-composer-storage';
  */
 export const idbStorage: StateStorage = {
   getItem: async (name: string): Promise<string | null> => {
-    const value = await get<string>(name, idbStore);
+    try {
+      const value = await get<string>(name, idbStore);
 
-    if (value !== undefined) return value;
+      if (value !== undefined) return value;
 
-    // One-time migration: pull data from localStorage if it exists
-    if (typeof window !== 'undefined') {
-      const legacy = localStorage.getItem(STORAGE_KEY);
-      if (legacy) {
-        await set(name, legacy, idbStore);
-        localStorage.removeItem(STORAGE_KEY);
-        return legacy;
+      // One-time migration: pull data from localStorage if it exists
+      if (typeof window !== 'undefined') {
+        const legacy = localStorage.getItem(STORAGE_KEY);
+        if (legacy) {
+          await set(name, legacy, idbStore);
+          localStorage.removeItem(STORAGE_KEY);
+          return legacy;
+        }
       }
+    } catch {
+      // IndexedDB unavailable (private browsing, mobile restrictions, etc.)
     }
-
     return null;
   },
 
   setItem: async (name: string, value: string): Promise<void> => {
-    await set(name, value, idbStore);
+    try {
+      await set(name, value, idbStore);
+    } catch {
+      // Silently fail — app still works, data just won't persist
+    }
   },
 
   removeItem: async (name: string): Promise<void> => {
-    await del(name, idbStore);
+    try {
+      await del(name, idbStore);
+    } catch {
+      // Silently fail
+    }
   },
 };

@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { Sidebar } from './sidebar';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { AuthProvider } from '@/components/providers/auth-provider';
@@ -7,9 +8,21 @@ import { ServiceWorkerProvider } from '@/components/providers/sw-provider';
 import { useAppStore } from '@/lib/store';
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const { _hasHydrated } = useAppStore();
+  const { _hasHydrated, setHasHydrated } = useAppStore();
+  const [timedOut, setTimedOut] = useState(false);
 
-  if (!_hasHydrated) {
+  // Fallback: if IndexedDB hydration takes too long, proceed anyway
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!useAppStore.getState()._hasHydrated) {
+        setHasHydrated(true);
+        setTimedOut(true);
+      }
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, [setHasHydrated]);
+
+  if (!_hasHydrated && !timedOut) {
     return (
       <div className="flex h-screen items-center justify-center bg-[#0a0a0b]">
         <div className="flex flex-col items-center gap-3">
