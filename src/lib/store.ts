@@ -4,7 +4,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { idbStorage } from './idb-storage';
 import { v4 as uuidv4 } from 'uuid';
-import type { AIModel, GeneratedImage, AppSettings, GenerationJob, FaceConfig, BodyConfig, StyleConfig, SceneConfig, OutputConfig, CreditTier } from '@/types';
+import type { AIModel, GeneratedImage, AppSettings, AppUser, GenerationJob, FaceConfig, BodyConfig, StyleConfig, SceneConfig, OutputConfig, CreditTier } from '@/types';
 import { CREDIT_PACKS } from './constants';
 
 // ─── Default Configs ───────────────────────────────────────────
@@ -96,6 +96,11 @@ interface AppStore {
   // Credits
   purchaseCredits: (tier: CreditTier) => void;
   deductCredits: (amount: number) => boolean;
+
+  // User Auth
+  user: AppUser | null;
+  signIn: (user: AppUser) => void;
+  signOut: () => void;
 
   // Defaults
   defaultFace: FaceConfig;
@@ -205,7 +210,6 @@ export const useAppStore = create<AppStore>()(
 
       // ── Settings ────────────────────────────────────────────
       settings: {
-        replicateApiKey: '',
         defaultModel: 'black-forest-labs/flux-2-pro',
         defaultQuality: 'hd',
         theme: 'dark',
@@ -236,7 +240,12 @@ export const useAppStore = create<AppStore>()(
         return true;
       },
 
-      // ── Defaults ────────────────────────────────────────────
+      // ── User Auth ─────────────────────────────────────────────
+      user: null,
+      signIn: (userData) => set({ user: userData }),
+      signOut: () => set({ user: null }),
+
+      // ── Defaults ──────────────────────────────────────────────
       defaultFace,
       defaultBody,
       defaultStyle,
@@ -249,6 +258,7 @@ export const useAppStore = create<AppStore>()(
         activeModelId: state.activeModelId,
         images: state.images,
         settings: state.settings,
+        user: state.user,
       }),
       onRehydrateStorage: () => (state) => {
         if (state) {

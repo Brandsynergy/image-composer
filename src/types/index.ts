@@ -95,9 +95,14 @@ export interface CreditPack {
   label: string;
 }
 
+// ─── User Auth ─────────────────────────────────────────────────
+export interface AppUser {
+  name: string;
+  email: string;
+}
+
 // ─── App State ─────────────────────────────────────────────────
 export interface AppSettings {
-  replicateApiKey: string;
   defaultModel: string;
   defaultQuality: 'standard' | 'hd' | 'ultra';
   theme: 'dark' | 'light';

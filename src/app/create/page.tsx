@@ -98,30 +98,27 @@ export default function CreateModel() {
     const tempModel = { name, face, body, style, referenceImages: [] as string[], thumbnail: undefined as string | undefined };
     const prompt = buildPortraitPrompt({ ...tempModel, id: '', createdAt: '', updatedAt: '' });
 
-    // Try to generate a portrait if API key is set
-    if (settings.replicateApiKey) {
-      setIsGenerating(true);
-      try {
-        const res = await fetch('/api/generate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            prompt,
-            aspectRatio: '1:1',
-            apiKey: settings.replicateApiKey,
-          }),
-        });
-        const data = await res.json();
-        const imgUrl = data.output;
-        if (imgUrl && typeof imgUrl === 'string' && (imgUrl.startsWith('http') || imgUrl.startsWith('data:'))) {
-          tempModel.thumbnail = imgUrl;
-          tempModel.referenceImages = [imgUrl];
-        }
-      } catch (err) {
-        console.error('Generation failed:', err);
+    // Try to generate a portrait thumbnail
+    setIsGenerating(true);
+    try {
+      const res = await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt,
+          aspectRatio: '1:1',
+        }),
+      });
+      const data = await res.json();
+      const imgUrl = data.output;
+      if (imgUrl && typeof imgUrl === 'string' && (imgUrl.startsWith('http') || imgUrl.startsWith('data:'))) {
+        tempModel.thumbnail = imgUrl;
+        tempModel.referenceImages = [imgUrl];
       }
-      setIsGenerating(false);
+    } catch (err) {
+      console.error('Generation failed:', err);
     }
+    setIsGenerating(false);
 
     const model = addModel(tempModel);
     router.push('/studio');

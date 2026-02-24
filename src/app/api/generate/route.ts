@@ -144,11 +144,18 @@ const FALLBACK_ORDER: ModelId[] = ['flux-kontext-pro', 'flux-2-pro', 'flux-1.1-p
 
 export async function POST(req: NextRequest) {
   try {
+    const apiKey = process.env.REPLICATE_API_TOKEN;
+    if (!apiKey) {
+      return NextResponse.json(
+        { error: 'Server configuration error: REPLICATE_API_TOKEN is not set.' },
+        { status: 500 }
+      );
+    }
+
     const body = await req.json();
     const {
       prompt,
       aspectRatio = '4:5',
-      apiKey,
       seed,
       model = 'flux-kontext-pro',
       outputFormat = 'png',
@@ -159,13 +166,6 @@ export async function POST(req: NextRequest) {
       guidance,
       enhance = true,
     } = body;
-
-    if (!apiKey) {
-      return NextResponse.json(
-        { error: 'Replicate API key is required. Set it in Settings.' },
-        { status: 400 }
-      );
-    }
 
     if (!prompt) {
       return NextResponse.json(
@@ -194,7 +194,7 @@ export async function POST(req: NextRequest) {
 
     if (!result) {
       return NextResponse.json(
-        { error: `All models failed. Check your API key and billing at replicate.com. Errors: ${errors.join(' | ')}` },
+        { error: `All models failed. Errors: ${errors.join(' | ')}` },
         { status: 500 }
       );
     }

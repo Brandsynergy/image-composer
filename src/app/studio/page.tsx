@@ -78,7 +78,6 @@ export default function PhotoStudio() {
   const handleGenerate = async () => {
     if (!selectedModel) { setError('Please select or create an AI model first.'); return; }
     if (!_hasHydrated) { setError('Loading saved settings… please try again.'); return; }
-    if (!settings.replicateApiKey) { setError('Please set your Replicate API key in Settings.'); return; }
     if (settings.credits < creditCost) {
       setError(`Not enough credits. You need ${creditCost} but have ${settings.credits}. Buy more in Pricing.`);
       return;
@@ -99,7 +98,6 @@ export default function PhotoStudio() {
           body: JSON.stringify({
             prompt,
             aspectRatio: output.aspectRatio,
-            apiKey: settings.replicateApiKey,
             seed: selectedModel.seed,
             model: engine,
             outputFormat,
