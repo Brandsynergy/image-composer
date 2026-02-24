@@ -96,6 +96,7 @@ export interface Campaign {
   targetPlatforms: string[];
   modelIds: string[];
   imageIds: string[];
+  productImages: string[];
   createdAt: string;
   updatedAt: string;
   status: 'draft' | 'active' | 'completed';
