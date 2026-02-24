@@ -158,8 +158,6 @@ export async function POST(req: NextRequest) {
       steps,
       guidance,
       enhance = true,
-      overlayText = '',
-      productImage = '',
     } = body;
 
     if (!apiKey) {
@@ -182,48 +180,15 @@ export async function POST(req: NextRequest) {
     let result: { output: unknown; model: string } | null = null;
     const errors: string[] = [];
 
-    // ── Product-aware generation: use product as input_image so AI sees the actual product ──
-    if (productImage && typeof productImage === 'string' && productImage.length > 0) {
+    // Build unique fallback chain: requested model first, then remaining in order
+    const chain: ModelId[] = [model as ModelId, ...FALLBACK_ORDER.filter((m) => m !== model)];
+
+    for (const mid of chain) {
       try {
-        const productPrompt = [
-          prompt,
-          'The model is naturally holding and presenting the exact product visible in the input image.',
-          'CRITICAL: Preserve the product\'s exact appearance — same shape, colors, logos, labels, branding, and all visual details.',
-          'The product must be clearly visible, well-lit, and prominently featured in the model\'s hands or nearby.',
-          'Professional advertising product photography with clean composition.',
-        ].join(' ');
-
-        const productOutput = await replicate.run(
-          MODEL_MAP['flux-kontext-pro'],
-          {
-            input: {
-              prompt: productPrompt,
-              input_image: productImage,
-              aspect_ratio: aspectRatio,
-              output_format: outputFormat === 'webp' ? 'jpg' : outputFormat,
-              safety_tolerance: 2,
-              ...(seed ? { seed } : {}),
-            },
-          }
-        );
-        result = { output: productOutput, model: 'flux-kontext-pro' };
+        result = await runModel(replicate, mid, opts);
+        break;
       } catch (e) {
-        errors.push(`kontext-product: ${e instanceof Error ? e.message : String(e)}`);
-        // Fall through to normal generation
-      }
-    }
-
-    // ── Standard generation (no product or product pass failed) ──
-    if (!result) {
-      const chain: ModelId[] = [model as ModelId, ...FALLBACK_ORDER.filter((m) => m !== model)];
-
-      for (const mid of chain) {
-        try {
-          result = await runModel(replicate, mid, opts);
-          break;
-        } catch (e) {
-          errors.push(`${mid}: ${e instanceof Error ? e.message : String(e)}`);
-        }
+        errors.push(`${mid}: ${e instanceof Error ? e.message : String(e)}`);
       }
     }
 
@@ -274,46 +239,6 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // ── Text overlay pass: add punchy hook text via Kontext Pro ──
-    let hasOverlay = false;
-
-    if (overlayText && typeof overlayText === 'string' && overlayText.trim()) {
-      try {
-        const text = overlayText.trim();
-        const spelled = text.split('').map((ch) => ch === ' ' ? '[space]' : ch).join(', ');
-
-        const overlayPrompt = [
-          `Add the exact text "${text}" as a professional advertising headline overlay on this image.`,
-          `EXACT SPELLING — the text must read character by character: ${spelled}. Do not change, rearrange, drop, or add any letters. Every character must be exactly correct.`,
-          `TYPOGRAPHY: Bold, uppercase, modern sans-serif font similar to Helvetica Neue Bold or Montserrat Black. Clean thick high-impact lettering.`,
-          `COLOR: White or bright text with a strong dark drop shadow for crisp contrast against any background.`,
-          `PLACEMENT: Position the text horizontally centered in the bottom 15-20% of the image with comfortable padding from all edges. Never place text over the subject's face, eyes, or upper body.`,
-          `SIZE: Large enough to read instantly — approximately 8-10% of the image height.`,
-          `PRESERVE: Keep the entire photograph underneath completely unchanged — same person, pose, expression, skin, lighting, product, background, and composition. Only add the text overlay, nothing else.`,
-        ].join(' ');
-
-        const overlayOutput = await replicate.run(
-          MODEL_MAP['flux-kontext-pro'],
-          {
-            input: {
-              prompt: overlayPrompt,
-              input_image: finalUrl,
-              aspect_ratio: 'match_input_image',
-              output_format: 'png',
-              safety_tolerance: 2,
-            },
-          }
-        );
-        const overlayUrl = extractUrl(overlayOutput);
-        if (overlayUrl) {
-          finalUrl = overlayUrl;
-          hasOverlay = true;
-        }
-      } catch (overlayErr) {
-        console.warn('Text overlay pass failed, returning image without text:', overlayErr instanceof Error ? overlayErr.message : overlayErr);
-      }
-    }
-
     // Convert to base64 data URL so the image persists in localStorage
     // (Replicate delivery URLs expire after a few hours)
     let permanentUrl = finalUrl;
@@ -324,7 +249,7 @@ export async function POST(req: NextRequest) {
       console.warn('Could not convert to data URL, returning temporary Replicate URL');
     }
 
-    return NextResponse.json({ output: permanentUrl, model: result.model, enhanced, hasOverlay });
+    return NextResponse.json({ output: permanentUrl, model: result.model, enhanced });
   } catch (error) {
     console.error('Generation error:', error);
     return NextResponse.json(

@@ -24,6 +24,74 @@ import {
 const PLATFORMS = ['Instagram', 'TikTok', 'YouTube', 'Twitter/X', 'LinkedIn', 'Pinterest', 'Facebook'];
 const CAMPAIGN_MOODS = ['Aspirational', 'Bold', 'Elegant', 'Playful', 'Edgy', 'Warm', 'Corporate', 'Luxurious'];
 
+// Client-side Canvas text overlay — pixel-perfect, zero AI credits, 100% correct spelling
+function addCanvasTextOverlay(imageDataUrl: string, text: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) { resolve(imageDataUrl); return; }
+
+      // Draw base image
+      ctx.drawImage(img, 0, 0);
+
+      // Split on em dash for two-line layout (hook — brand)
+      const lines = text.includes('\u2014')
+        ? text.split('\u2014').map((s) => s.trim()).filter(Boolean)
+        : [text];
+
+      // Font sizing relative to image
+      const primarySize = Math.round(img.height * 0.05);
+      const secondarySize = Math.round(img.height * 0.032);
+      const lineGap = primarySize * 0.5;
+
+      // Backdrop dimensions
+      const totalTextHeight = primarySize + (lines.length > 1 ? secondarySize + lineGap : 0);
+      const pad = primarySize * 1.2;
+      const backdropH = totalTextHeight + pad * 2;
+      const backdropY = img.height - backdropH;
+
+      // Gradient backdrop: transparent → dark
+      const grad = ctx.createLinearGradient(0, backdropY, 0, img.height);
+      grad.addColorStop(0, 'rgba(0,0,0,0)');
+      grad.addColorStop(0.25, 'rgba(0,0,0,0.65)');
+      grad.addColorStop(1, 'rgba(0,0,0,0.85)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, backdropY, img.width, backdropH);
+
+      ctx.textAlign = 'center';
+      const cx = img.width / 2;
+
+      // Primary line (hook text)
+      const py = lines.length === 1
+        ? backdropY + backdropH / 2
+        : backdropY + pad + primarySize / 2 + primarySize * 0.15;
+      ctx.font = `800 ${primarySize}px "Helvetica Neue", Helvetica, Arial, sans-serif`;
+      // Shadow
+      ctx.fillStyle = 'rgba(0,0,0,0.6)';
+      ctx.fillText(lines[0].toUpperCase(), cx + 2, py + 2);
+      // Text
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillText(lines[0].toUpperCase(), cx, py);
+
+      // Secondary line (brand name)
+      if (lines.length > 1 && lines[1]) {
+        const sy = py + primarySize / 2 + lineGap + secondarySize / 2;
+        ctx.font = `600 ${secondarySize}px "Helvetica Neue", Helvetica, Arial, sans-serif`;
+        ctx.fillStyle = 'rgba(255,255,255,0.75)';
+        ctx.fillText(lines[1].toUpperCase(), cx, sy);
+      }
+
+      resolve(canvas.toDataURL('image/png'));
+    };
+    img.onerror = () => resolve(imageDataUrl); // Fallback: return original
+    img.src = imageDataUrl;
+  });
+}
+
 const HOOK_TEMPLATES: Record<string, string[]> = {
   Aspirational: ['Dream Bigger', 'Elevate Everything', 'Rise Above', 'Your Best Self Awaits', 'Reach Higher'],
   Bold: ['Own the Moment', 'Be Unstoppable', 'No Limits', 'Break the Rules', 'Go All In'],
@@ -152,7 +220,6 @@ export default function Campaigns() {
     setIsGenerating(true);
 
     try {
-      const hasProduct = (campaign.productImages || []).length > 0;
       const scene = {
         ...defaultScene,
         mood: campaign.mood || 'Empowering',
@@ -162,7 +229,7 @@ export default function Campaigns() {
         customPrompt: [
           campaign.contentBrief,
           campaign.brandName ? `for ${campaign.brandName} brand campaign` : '',
-          hasProduct ? 'holding and elegantly showcasing the product. The product must be clearly visible and prominent.' : '',
+          (campaign.productImages || []).length > 0 ? 'holding and showcasing a branded product' : '',
         ].filter(Boolean).join('. '),
       };
 
@@ -180,16 +247,23 @@ export default function Campaigns() {
           outputFormat: 'png',
           outputQuality: 95,
           enhance: true,
-          ...(overlayEnabled && overlayText.trim() ? { overlayText: overlayText.trim() } : {}),
-          ...(hasProduct ? { productImage: campaign.productImages[0] } : {}),
         }),
       });
 
       const data = await res.json();
       if (data.error) { setGenError(data.error); setIsGenerating(false); return; }
 
-      const url = typeof data.output === 'string' ? data.output : null;
+      let url = typeof data.output === 'string' ? data.output : null;
       if (url && (url.startsWith('http') || url.startsWith('data:'))) {
+        // Apply client-side Canvas text overlay (pixel-perfect, zero credits)
+        if (overlayEnabled && overlayText.trim() && url) {
+          try {
+            url = await addCanvasTextOverlay(url, overlayText.trim());
+          } catch {
+            // Overlay failed — keep original image
+          }
+        }
+
         addImages([{
           modelId: model.id,
           url,
