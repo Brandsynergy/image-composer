@@ -124,10 +124,11 @@ export const SETTINGS = [
 ];
 
 export const POSES = [
+  'Facing Camera Directly', 'Side View/Profile', 'Looking Up', 'Looking Down',
+  'Three-Quarter Profile', 'Looking Over Shoulder',
   'Standing Confident', 'Walking/In Motion', 'Seated Casual',
   'Seated Cross-legged', 'Leaning Against Wall', 'Arms Crossed',
-  'Hand on Hip', 'Looking Over Shoulder', 'Close-up Portrait',
-  'Three-Quarter Profile', 'Full Body', 'Sitting on Steps',
+  'Hand on Hip', 'Close-up Portrait', 'Full Body', 'Sitting on Steps',
   'Candid/Natural Movement', 'Power Pose', 'Relaxed Recline',
 ];
 
