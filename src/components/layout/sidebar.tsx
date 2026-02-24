@@ -241,8 +241,8 @@ export function Sidebar() {
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-violet-600 to-fuchsia-500 text-[10px] font-bold text-white">
               {initials}
             </div>
-            <button onClick={handleSignOut} className="p-1.5 rounded-lg text-zinc-500 hover:text-red-400 transition-colors">
-              <LogOut className="h-4 w-4" />
+            <button onClick={handleSignOut} className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-zinc-300 hover:text-red-400 hover:bg-red-500/10 transition-colors text-xs font-medium">
+              <LogOut className="h-3.5 w-3.5" /> Sign Out
             </button>
           </div>
         ) : (
@@ -267,7 +267,7 @@ export function Sidebar() {
               )}
             >
               <Icon className="h-5 w-5" />
-              <span className="text-[10px] font-medium">{item.label}</span>
+              <span className="text-[11px] font-medium">{item.label}</span>
             </Link>
           );
         })}
@@ -298,7 +298,7 @@ export function Sidebar() {
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       placeholder="Your name"
-                      className="bg-white/5 border-white/10 text-white placeholder:text-zinc-600"
+                      className="bg-white/5 border-white/10 text-white placeholder:text-zinc-400"
                     />
                   </div>
                 )}
@@ -309,7 +309,7 @@ export function Sidebar() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="you@example.com"
-                    className="bg-white/5 border-white/10 text-white placeholder:text-zinc-600"
+                    className="bg-white/5 border-white/10 text-white placeholder:text-zinc-400"
                   />
                 </div>
                 <div className="space-y-2">
@@ -319,7 +319,7 @@ export function Sidebar() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="bg-white/5 border-white/10 text-white placeholder:text-zinc-600"
+                    className="bg-white/5 border-white/10 text-white placeholder:text-zinc-400"
                     onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
                   />
                 </div>

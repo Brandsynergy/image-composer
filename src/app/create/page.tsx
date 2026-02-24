@@ -311,7 +311,7 @@ export default function CreateModel() {
                   value={modelName}
                   onChange={(e) => setModelName(e.target.value)}
                   placeholder="e.g. Luna, Kai, Aria..."
-                  className="bg-white/5 border-white/10 text-white placeholder:text-zinc-600 max-w-sm"
+                  className="bg-white/5 border-white/10 text-white placeholder:text-zinc-400 max-w-sm"
                 />
               </div>
 

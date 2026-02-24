@@ -153,7 +153,7 @@ export default function Pricing() {
                 <div>
                   <span className="text-3xl font-bold text-white">${pack.price.toFixed(2)}</span>
                   <span className="text-xs text-zinc-500 ml-1">one-time</span>
-                  <p className="text-[10px] text-zinc-600 mt-1">${perCredit} per credit</p>
+                  <p className="text-[10px] text-zinc-400 mt-1">${perCredit} per credit</p>
                 </div>
 
                 {/* Features */}
@@ -202,7 +202,7 @@ export default function Pricing() {
         <p className="text-[11px] text-zinc-500">
           1 credit = 1 standard image generation. Enhanced images (PRO Enhance) use 2 credits.
         </p>
-        <p className="text-[11px] text-zinc-600">
+        <p className="text-[11px] text-zinc-400">
           Credits are non-refundable and do not roll over when purchasing a new pack.
         </p>
       </div>
@@ -216,10 +216,10 @@ function Feature({ included, label, sublabel }: { included: boolean; label: stri
       {included ? (
         <Check className="h-3.5 w-3.5 text-green-400 mt-0.5 shrink-0" />
       ) : (
-        <X className="h-3.5 w-3.5 text-zinc-600 mt-0.5 shrink-0" />
+        <X className="h-3.5 w-3.5 text-zinc-400 mt-0.5 shrink-0" />
       )}
       <div>
-        <span className={`text-xs ${included ? 'text-zinc-300' : 'text-zinc-600'}`}>{label}</span>
+        <span className={`text-xs ${included ? 'text-zinc-300' : 'text-zinc-400'}`}>{label}</span>
         {sublabel && <span className="text-[9px] text-zinc-500 block">{sublabel}</span>}
       </div>
     </div>

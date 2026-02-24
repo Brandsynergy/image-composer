@@ -229,7 +229,7 @@ export default function PhotoStudio() {
                     value={scene.outfitDetails}
                     onChange={(e) => updateScene({ outfitDetails: e.target.value })}
                     placeholder="e.g. Gucci belt, gold watch, red heels..."
-                    className="bg-white/[0.03] border-white/[0.06] text-white text-xs placeholder:text-zinc-600 h-8"
+                    className="bg-white/[0.03] border-white/[0.06] text-white text-xs placeholder:text-zinc-400 h-8"
                   />
                 </div>
                 <FieldGroup label="Lighting" icon={Sun}>
@@ -445,11 +445,11 @@ export default function PhotoStudio() {
                   <div className="p-3 rounded-lg bg-white/[0.02] border border-white/[0.06]">
                     <div className="flex items-center gap-2">
                       <div className="h-7 w-7 rounded-lg bg-zinc-800 flex items-center justify-center">
-                        <Sparkles className="h-3.5 w-3.5 text-zinc-600" />
+                        <Sparkles className="h-3.5 w-3.5 text-zinc-400" />
                       </div>
                       <div>
                         <span className="text-[11px] font-semibold text-zinc-500 block">PRO Enhance</span>
-                        <span className="text-[9px] text-zinc-600">Available with 50+ credit packs</span>
+                        <span className="text-[9px] text-zinc-400">Available with 50+ credit packs</span>
                       </div>
                     </div>
                   </div>

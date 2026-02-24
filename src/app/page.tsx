@@ -62,7 +62,7 @@ export default function Dashboard() {
               <li className="flex justify-between"><span>50 credits <span className="text-cyan-400">+ PRO Enhance</span></span><span className="text-white font-medium">$12.00</span></li>
               <li className="flex justify-between"><span>100 credits <span className="text-cyan-400">+ PRO Enhance</span></span><span className="text-white font-medium">$20.00</span></li>
             </ul>
-            <p className="text-[9px] text-zinc-600 mt-2">Pay as you go. No subscriptions. No rollovers.</p>
+            <p className="text-[9px] text-zinc-400 mt-2">Pay as you go. No subscriptions. No rollovers.</p>
           </div>
           <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-4">
             <h4 className="text-xs font-semibold text-white mb-1.5">PRO Enhance</h4>

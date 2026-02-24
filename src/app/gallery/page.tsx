@@ -56,7 +56,7 @@ export default function Gallery() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by prompt, tag, setting..."
-            className="pl-9 bg-white/[0.03] border-white/[0.06] text-white text-sm placeholder:text-zinc-600 h-9"
+            className="pl-9 bg-white/[0.03] border-white/[0.06] text-white text-sm placeholder:text-zinc-400 h-9"
           />
         </div>
 
