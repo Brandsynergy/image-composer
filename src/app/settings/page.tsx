@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useAppStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -9,15 +9,19 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Key, Save, Trash2, Database, AlertTriangle, Check, ExternalLink } from 'lucide-react';
+import { del, createStore } from 'idb-keyval';
 
 export default function Settings() {
   const { settings, updateSettings, models, images, campaigns } = useAppStore();
   const [apiKey, setApiKey] = useState('');
   const [saved, setSaved] = useState(false);
 
-  useEffect(() => {
+  // Sync store value into local state during render (React 19 pattern)
+  const [prevStoreKey, setPrevStoreKey] = useState('');
+  if (settings.replicateApiKey !== prevStoreKey) {
+    setPrevStoreKey(settings.replicateApiKey);
     setApiKey(settings.replicateApiKey);
-  }, [settings.replicateApiKey]);
+  }
 
   const handleSave = () => {
     updateSettings({ replicateApiKey: apiKey });
@@ -25,9 +29,10 @@ export default function Settings() {
     setTimeout(() => setSaved(false), 2000);
   };
 
-  const handleClearData = () => {
+  const handleClearData = async () => {
     if (window.confirm('Are you sure you want to clear all data? This cannot be undone.')) {
-      localStorage.removeItem('image-composer-storage');
+      const idbStore = createStore('image-composer-db', 'app-state');
+      await del('image-composer-storage', idbStore);
       window.location.reload();
     }
   };

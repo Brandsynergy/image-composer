@@ -2,7 +2,7 @@
 
 import { Sidebar } from './sidebar';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useAppStore } from '@/lib/store';
 import { Settings, Key, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -16,28 +16,19 @@ import {
 } from '@/components/ui/dialog';
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const [mounted, setMounted] = useState(false);
-  const [showApiDialog, setShowApiDialog] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
   const [apiKey, setApiKey] = useState('');
   const { settings, updateSettings, _hasHydrated } = useAppStore();
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // Only show API dialog after store has loaded from localStorage
-  useEffect(() => {
-    if (_hasHydrated && !settings.replicateApiKey) {
-      setShowApiDialog(true);
-    }
-  }, [_hasHydrated, settings.replicateApiKey]);
+  // Derive dialog visibility — no useEffect needed
+  const showApiDialog = _hasHydrated && !settings.replicateApiKey && !dismissed;
 
   const handleSaveApiKey = () => {
     updateSettings({ replicateApiKey: apiKey });
-    setShowApiDialog(false);
+    setDismissed(true);
   };
 
-  if (!mounted) {
+  if (!_hasHydrated) {
     return (
       <div className="flex h-screen items-center justify-center bg-[#0a0a0b]">
         <div className="flex flex-col items-center gap-3">
@@ -62,7 +53,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 size="sm"
                 onClick={() => {
                   setApiKey(settings.replicateApiKey);
-                  setShowApiDialog(true);
+                  setDismissed(false);
                 }}
                 className="text-zinc-400 hover:text-white"
               >
@@ -85,7 +76,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </main>
 
         {/* API Key Dialog */}
-        <Dialog open={showApiDialog} onOpenChange={setShowApiDialog}>
+        <Dialog open={showApiDialog} onOpenChange={(open) => { if (!open) setDismissed(true); }}>
           <DialogContent className="bg-[#141416] border-white/10 text-white sm:max-w-md">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
@@ -116,7 +107,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <div className="flex gap-2 justify-end">
                 <Button
                   variant="ghost"
-                  onClick={() => setShowApiDialog(false)}
+                  onClick={() => setDismissed(true)}
                   className="text-zinc-400"
                 >
                   Skip for now
