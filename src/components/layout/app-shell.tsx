@@ -3,6 +3,7 @@
 import { Sidebar } from './sidebar';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { AuthProvider } from '@/components/providers/auth-provider';
+import { ServiceWorkerProvider } from '@/components/providers/sw-provider';
 import { useAppStore } from '@/lib/store';
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -21,6 +22,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthProvider>
+      <ServiceWorkerProvider />
       <TooltipProvider delayDuration={0}>
         <div className="flex min-h-screen bg-[#0a0a0b] text-white">
           <Sidebar />
