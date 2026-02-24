@@ -152,6 +152,7 @@ export default function Campaigns() {
     setIsGenerating(true);
 
     try {
+      const hasProduct = (campaign.productImages || []).length > 0;
       const scene = {
         ...defaultScene,
         mood: campaign.mood || 'Empowering',
@@ -161,7 +162,7 @@ export default function Campaigns() {
         customPrompt: [
           campaign.contentBrief,
           campaign.brandName ? `for ${campaign.brandName} brand campaign` : '',
-          (campaign.productImages || []).length > 0 ? 'holding/showcasing a branded product' : '',
+          hasProduct ? 'holding and elegantly showcasing the product. The product must be clearly visible and prominent.' : '',
         ].filter(Boolean).join('. '),
       };
 
@@ -180,6 +181,7 @@ export default function Campaigns() {
           outputQuality: 95,
           enhance: true,
           ...(overlayEnabled && overlayText.trim() ? { overlayText: overlayText.trim() } : {}),
+          ...(hasProduct ? { productImage: campaign.productImages[0] } : {}),
         }),
       });
 

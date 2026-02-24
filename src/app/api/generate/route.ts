@@ -159,6 +159,7 @@ export async function POST(req: NextRequest) {
       guidance,
       enhance = true,
       overlayText = '',
+      productImage = '',
     } = body;
 
     if (!apiKey) {
@@ -181,15 +182,48 @@ export async function POST(req: NextRequest) {
     let result: { output: unknown; model: string } | null = null;
     const errors: string[] = [];
 
-    // Build unique fallback chain: requested model first, then remaining in order
-    const chain: ModelId[] = [model as ModelId, ...FALLBACK_ORDER.filter((m) => m !== model)];
-
-    for (const mid of chain) {
+    // ── Product-aware generation: use product as input_image so AI sees the actual product ──
+    if (productImage && typeof productImage === 'string' && productImage.length > 0) {
       try {
-        result = await runModel(replicate, mid, opts);
-        break;
+        const productPrompt = [
+          prompt,
+          'The model is naturally holding and presenting the exact product visible in the input image.',
+          'CRITICAL: Preserve the product\'s exact appearance — same shape, colors, logos, labels, branding, and all visual details.',
+          'The product must be clearly visible, well-lit, and prominently featured in the model\'s hands or nearby.',
+          'Professional advertising product photography with clean composition.',
+        ].join(' ');
+
+        const productOutput = await replicate.run(
+          MODEL_MAP['flux-kontext-pro'],
+          {
+            input: {
+              prompt: productPrompt,
+              input_image: productImage,
+              aspect_ratio: aspectRatio,
+              output_format: outputFormat === 'webp' ? 'jpg' : outputFormat,
+              safety_tolerance: 2,
+              ...(seed ? { seed } : {}),
+            },
+          }
+        );
+        result = { output: productOutput, model: 'flux-kontext-pro' };
       } catch (e) {
-        errors.push(`${mid}: ${e instanceof Error ? e.message : String(e)}`);
+        errors.push(`kontext-product: ${e instanceof Error ? e.message : String(e)}`);
+        // Fall through to normal generation
+      }
+    }
+
+    // ── Standard generation (no product or product pass failed) ──
+    if (!result) {
+      const chain: ModelId[] = [model as ModelId, ...FALLBACK_ORDER.filter((m) => m !== model)];
+
+      for (const mid of chain) {
+        try {
+          result = await runModel(replicate, mid, opts);
+          break;
+        } catch (e) {
+          errors.push(`${mid}: ${e instanceof Error ? e.message : String(e)}`);
+        }
       }
     }
 
@@ -245,12 +279,17 @@ export async function POST(req: NextRequest) {
 
     if (overlayText && typeof overlayText === 'string' && overlayText.trim()) {
       try {
+        const text = overlayText.trim();
+        const spelled = text.split('').map((ch) => ch === ' ' ? '[space]' : ch).join(', ');
+
         const overlayPrompt = [
-          `Add the text "${overlayText.trim()}" as a bold, modern advertising headline overlay on this image.`,
-          'Use a clean, high-impact sans-serif typeface. Make the text large and prominent.',
-          'Add a subtle drop shadow or semi-transparent backdrop behind the text for readability.',
-          'Position the text in a visually balanced location that does not obscure the subject\'s face.',
-          'Keep the exact same image, pose, lighting, and composition underneath.',
+          `Add the exact text "${text}" as a professional advertising headline overlay on this image.`,
+          `EXACT SPELLING — the text must read character by character: ${spelled}. Do not change, rearrange, drop, or add any letters. Every character must be exactly correct.`,
+          `TYPOGRAPHY: Bold, uppercase, modern sans-serif font similar to Helvetica Neue Bold or Montserrat Black. Clean thick high-impact lettering.`,
+          `COLOR: White or bright text with a strong dark drop shadow for crisp contrast against any background.`,
+          `PLACEMENT: Position the text horizontally centered in the bottom 15-20% of the image with comfortable padding from all edges. Never place text over the subject's face, eyes, or upper body.`,
+          `SIZE: Large enough to read instantly — approximately 8-10% of the image height.`,
+          `PRESERVE: Keep the entire photograph underneath completely unchanged — same person, pose, expression, skin, lighting, product, background, and composition. Only add the text overlay, nothing else.`,
         ].join(' ');
 
         const overlayOutput = await replicate.run(
