@@ -158,6 +158,7 @@ export async function POST(req: NextRequest) {
       steps,
       guidance,
       enhance = true,
+      productDescription = '',
     } = body;
 
     if (!apiKey) {
@@ -236,6 +237,38 @@ export async function POST(req: NextRequest) {
       } catch (enhErr) {
         // Enhancement failed — return the original image rather than erroring out
         console.warn('Enhancement pass failed, returning original:', enhErr instanceof Error ? enhErr.message : enhErr);
+      }
+    }
+
+    // ── Product integration pass: edit the generated photo to include the described product ──
+    if (productDescription && typeof productDescription === 'string' && productDescription.trim()) {
+      try {
+        const productPrompt = [
+          `Edit this photo so the model is holding and presenting: ${productDescription.trim()}.`,
+          'Place the product naturally in the model\'s hands. The product should be clearly visible, well-lit, and prominent.',
+          'Keep the model\'s face, expression, hair, outfit, pose, and background exactly the same.',
+          'Only change what is in the model\'s hands to show the described product.',
+          'Professional advertising product photography.',
+        ].join(' ');
+
+        const productOutput = await replicate.run(
+          MODEL_MAP['flux-kontext-pro'],
+          {
+            input: {
+              prompt: productPrompt,
+              input_image: finalUrl,
+              aspect_ratio: 'match_input_image',
+              output_format: 'png',
+              safety_tolerance: 2,
+            },
+          }
+        );
+        const productUrl = extractUrl(productOutput);
+        if (productUrl) {
+          finalUrl = productUrl;
+        }
+      } catch (prodErr) {
+        console.warn('Product integration pass failed, returning image without product:', prodErr instanceof Error ? prodErr.message : prodErr);
       }
     }
 

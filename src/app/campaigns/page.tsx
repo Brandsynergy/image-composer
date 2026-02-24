@@ -24,7 +24,7 @@ import {
 const PLATFORMS = ['Instagram', 'TikTok', 'YouTube', 'Twitter/X', 'LinkedIn', 'Pinterest', 'Facebook'];
 const CAMPAIGN_MOODS = ['Aspirational', 'Bold', 'Elegant', 'Playful', 'Edgy', 'Warm', 'Corporate', 'Luxurious'];
 
-// Client-side Canvas text overlay — pixel-perfect, zero AI credits, 100% correct spelling
+// Client-side Canvas text overlay with word-wrapping
 function addCanvasTextOverlay(imageDataUrl: string, text: string): Promise<string> {
   return new Promise((resolve) => {
     const img = new Image();
@@ -37,61 +37,75 @@ function addCanvasTextOverlay(imageDataUrl: string, text: string): Promise<strin
 
       ctx.drawImage(img, 0, 0);
 
-      // Split on em dash for two-line layout (hook — brand)
-      const parts = text.includes('\u2014')
+      const maxW = img.width * 0.85;
+      const font = (w: string, sz: number) => `${w} ${sz}px "Helvetica Neue", Helvetica, Arial, sans-serif`;
+
+      // Word-wrap: split text into lines that fit within maxW
+      function wrapLines(label: string, size: number, weight: string): string[] {
+        ctx!.font = font(weight, size);
+        const words = label.split(' ');
+        const lines: string[] = [];
+        let cur = words[0] || '';
+        for (let i = 1; i < words.length; i++) {
+          const test = cur + ' ' + words[i];
+          if (ctx!.measureText(test).width <= maxW) { cur = test; }
+          else { lines.push(cur); cur = words[i]; }
+        }
+        lines.push(cur);
+        return lines;
+      }
+
+      // Split on em dash for hook / brand layout
+      const sections = text.includes('\u2014')
         ? text.split('\u2014').map((s) => s.trim()).filter(Boolean)
         : [text];
 
-      const maxWidth = img.width * 0.85;
+      const primarySz = Math.round(img.height * 0.045);
+      const secondarySz = Math.round(img.height * 0.03);
+      const lineH = primarySz * 1.35;
+      const secLineH = secondarySz * 1.35;
 
-      // Auto-fit: shrink font until text fits within maxWidth
-      function fitFont(label: string, maxSize: number, weight: string): number {
-        let sz = maxSize;
-        while (sz > 14) {
-          ctx!.font = `${weight} ${sz}px "Helvetica Neue", Helvetica, Arial, sans-serif`;
-          if (ctx!.measureText(label.toUpperCase()).width <= maxWidth) break;
-          sz -= 2;
-        }
-        return sz;
-      }
+      const primaryLines = wrapLines(sections[0].toUpperCase(), primarySz, '800');
+      const secondaryLines = sections[1] ? wrapLines(sections[1].toUpperCase(), secondarySz, '600') : [];
 
-      const primarySize = fitFont(parts[0], Math.round(img.height * 0.055), '800');
-      const secondarySize = parts[1] ? fitFont(parts[1], Math.round(img.height * 0.035), '600') : 0;
-      const lineGap = primarySize * 0.5;
-
-      // Backdrop dimensions
-      const totalH = primarySize + (parts.length > 1 ? secondarySize + lineGap : 0);
-      const pad = primarySize * 1.2;
+      // Backdrop sizing
+      const totalH = primaryLines.length * lineH
+        + (secondaryLines.length > 0 ? primarySz * 0.4 + secondaryLines.length * secLineH : 0);
+      const pad = primarySz * 1.0;
       const backdropH = totalH + pad * 2;
       const backdropY = img.height - backdropH;
 
-      // Gradient backdrop: transparent → dark
+      // Gradient backdrop
       const grad = ctx.createLinearGradient(0, backdropY, 0, img.height);
       grad.addColorStop(0, 'rgba(0,0,0,0)');
-      grad.addColorStop(0.25, 'rgba(0,0,0,0.65)');
+      grad.addColorStop(0.2, 'rgba(0,0,0,0.6)');
       grad.addColorStop(1, 'rgba(0,0,0,0.85)');
       ctx.fillStyle = grad;
       ctx.fillRect(0, backdropY, img.width, backdropH);
 
       ctx.textAlign = 'center';
       const cx = img.width / 2;
+      let y = backdropY + pad + primarySz * 0.5;
 
-      // Primary line (hook text)
-      const py = parts.length === 1
-        ? backdropY + backdropH / 2
-        : backdropY + pad + primarySize / 2 + primarySize * 0.15;
-      ctx.font = `800 ${primarySize}px "Helvetica Neue", Helvetica, Arial, sans-serif`;
-      ctx.fillStyle = 'rgba(0,0,0,0.6)';
-      ctx.fillText(parts[0].toUpperCase(), cx + 2, py + 2);
-      ctx.fillStyle = '#FFFFFF';
-      ctx.fillText(parts[0].toUpperCase(), cx, py);
+      // Render primary lines
+      ctx.font = font('800', primarySz);
+      for (const line of primaryLines) {
+        ctx.fillStyle = 'rgba(0,0,0,0.5)';
+        ctx.fillText(line, cx + 1.5, y + 1.5);
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillText(line, cx, y);
+        y += lineH;
+      }
 
-      // Secondary line (brand name)
-      if (parts.length > 1 && parts[1]) {
-        const sy = py + primarySize / 2 + lineGap + secondarySize / 2;
-        ctx.font = `600 ${secondarySize}px "Helvetica Neue", Helvetica, Arial, sans-serif`;
-        ctx.fillStyle = 'rgba(255,255,255,0.75)';
-        ctx.fillText(parts[1].toUpperCase(), cx, sy);
+      // Render secondary lines (brand)
+      if (secondaryLines.length > 0) {
+        y += primarySz * 0.15;
+        ctx.font = font('600', secondarySz);
+        for (const line of secondaryLines) {
+          ctx.fillStyle = 'rgba(255,255,255,0.7)';
+          ctx.fillText(line, cx, y);
+          y += secLineH;
+        }
       }
 
       resolve(canvas.toDataURL('image/png'));
@@ -132,6 +146,7 @@ export default function Campaigns() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [overlayEnabled, setOverlayEnabled] = useState(false);
   const [overlayText, setOverlayText] = useState('');
+  const [productDesc, setProductDesc] = useState('');
 
   // Form state
   const [name, setName] = useState('');
@@ -256,6 +271,7 @@ export default function Campaigns() {
           outputFormat: 'png',
           outputQuality: 95,
           enhance: true,
+          ...(productDesc.trim() ? { productDescription: productDesc.trim() } : {}),
         }),
       });
 
@@ -436,8 +452,7 @@ export default function Campaigns() {
                   <div>
                     <div className="flex items-center justify-between mb-3">
                       <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-                        <Package className="h-4 w-4 text-violet-400" /> Product Reference
-                        <span className="text-[9px] text-zinc-600 font-normal">(visual guide)</span>
+                        <Package className="h-4 w-4 text-violet-400" /> Product
                       </h3>
                       <Button variant="ghost" size="sm" onClick={() => fileInputRef.current?.click()} className="text-violet-400 hover:text-white text-xs gap-1 h-7">
                         <Upload className="h-3 w-3" /> Upload
@@ -471,6 +486,19 @@ export default function Campaigns() {
                     )}
                   </div>
 
+                  {/* Product Description for AI */}
+                  <div>
+                    <Label className="text-[11px] text-zinc-400 mb-1.5 block">Describe the product for AI generation</Label>
+                    <Input
+                      value={productDesc}
+                      onChange={(e) => setProductDesc(e.target.value)}
+                      placeholder="e.g. Prettirootz Nettle Shampoo — black and green bottle with gold R logo"
+                      className="bg-white/5 border-white/10 text-white text-xs placeholder:text-zinc-600"
+                      maxLength={120}
+                    />
+                    <p className="text-[9px] text-zinc-600 mt-1">AI will use image-to-image to place this product in the model’s hands.</p>
+                  </div>
+
                   <Separator className="bg-white/[0.06]" />
 
                   {/* Text Overlay */}
@@ -497,9 +525,9 @@ export default function Campaigns() {
                           <Input
                             value={overlayText}
                             onChange={(e) => setOverlayText(e.target.value)}
-                            placeholder="e.g. Dream Bigger"
+                            placeholder="e.g. Beautiful Hair — Prettirootz"
                             className="bg-white/5 border-white/10 text-white text-sm placeholder:text-zinc-600 flex-1"
-                            maxLength={30}
+                            maxLength={80}
                           />
                           <Button
                             variant="ghost"
@@ -511,7 +539,7 @@ export default function Campaigns() {
                             <RefreshCw className="h-3 w-3" /> Generate
                           </Button>
                         </div>
-                        <p className="text-[10px] text-zinc-500">2-3 words recommended. Use — to split hook and brand (e.g. "Go All In — Nike").</p>
+                        <p className="text-[10px] text-zinc-500">Use — to split hook and brand name. Long text auto-wraps.</p>
                       </div>
                     )}
                   </div>
