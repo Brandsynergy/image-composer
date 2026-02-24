@@ -1,4 +1,11 @@
-import { ExportPreset } from '@/types';
+import { ExportPreset, CreditPack } from '@/types';
+
+// ─── Credit Packs ──────────────────────────────────────────────
+export const CREDIT_PACKS: CreditPack[] = [
+  { tier: 20,  credits: 20,  price: 10.00, enhanceEnabled: false, label: 'Starter' },
+  { tier: 50,  credits: 50,  price: 12.00, enhanceEnabled: true,  label: 'Pro' },
+  { tier: 100, credits: 100, price: 20.00, enhanceEnabled: true,  label: 'Studio' },
+];
 
 // ─── Face Configuration Options ────────────────────────────────
 export const ETHNICITIES = [

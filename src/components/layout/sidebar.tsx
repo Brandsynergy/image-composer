@@ -8,6 +8,7 @@ import {
   UserPlus,
   Camera,
   Image,
+  Coins,
   Settings,
   Sparkles,
   ChevronLeft,
@@ -22,6 +23,7 @@ const navItems = [
   { href: '/create', label: 'Model Creator', icon: UserPlus },
   { href: '/studio', label: 'Photo Studio', icon: Camera },
   { href: '/gallery', label: 'Gallery', icon: Image },
+  { href: '/pricing', label: 'Pricing', icon: Coins },
   { href: '/settings', label: 'Settings', icon: Settings },
 ];
 

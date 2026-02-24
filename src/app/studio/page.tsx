@@ -17,10 +17,11 @@ import {
   SETTINGS, POSES, OUTFITS, LIGHTING, CAMERA_ANGLES, CAMERA_DISTANCES,
   MOODS, TIMES_OF_DAY, BACKGROUNDS, ASPECT_RATIOS, VIRAL_PRESETS,
 } from '@/lib/constants';
+import Link from 'next/link';
 import {
   Camera, Sparkles, Wand2, Download, Heart, Users, Zap,
   Sun, MapPin, PersonStanding, Shirt, Aperture, Move3D,
-  Palette, Clock, ImageIcon, RotateCcw, Copy, Trash2,
+  Palette, Clock, ImageIcon, RotateCcw, Copy, Trash2, Coins,
 } from 'lucide-react';
 
 function OptionPicker({ options, value, onChange }: { options: string[]; value: string; onChange: (v: string) => void }) {
@@ -44,7 +45,7 @@ function OptionPicker({ options, value, onChange }: { options: string[]; value: 
 }
 
 export default function PhotoStudio() {
-  const { models, settings, addImage, addImages, toggleFavorite, images, _hasHydrated } = useAppStore();
+  const { models, settings, addImage, addImages, toggleFavorite, images, _hasHydrated, deductCredits } = useAppStore();
   const [selectedModelId, setSelectedModelId] = useState<string>(models[0]?.id || '');
   const [scene, setScene] = useState<SceneConfig>({ ...defaultScene });
   const [output, setOutput] = useState<OutputConfig>({ ...defaultOutput });
@@ -61,7 +62,10 @@ export default function PhotoStudio() {
   const [outputQuality, setOutputQuality] = useState(95);
   const [flexSteps, setFlexSteps] = useState(28);
   const [flexGuidance, setFlexGuidance] = useState(3.5);
-  const [enhance, setEnhance] = useState(true);
+  const canEnhance = settings.creditTier !== null && settings.creditTier >= 50;
+  const [enhance, setEnhance] = useState(canEnhance);
+
+  const creditCost = (enhance && canEnhance) ? 2 * output.count : 1 * output.count;
 
   const selectedModel = models.find((m) => m.id === selectedModelId);
 
@@ -75,6 +79,10 @@ export default function PhotoStudio() {
     if (!selectedModel) { setError('Please select or create an AI model first.'); return; }
     if (!_hasHydrated) { setError('Loading saved settings… please try again.'); return; }
     if (!settings.replicateApiKey) { setError('Please set your Replicate API key in Settings.'); return; }
+    if (settings.credits < creditCost) {
+      setError(`Not enough credits. You need ${creditCost} but have ${settings.credits}. Buy more in Pricing.`);
+      return;
+    }
 
     setError('');
     setIsGenerating(true);
@@ -96,7 +104,7 @@ export default function PhotoStudio() {
             model: engine,
             outputFormat,
             outputQuality,
-            enhance,
+            enhance: enhance && canEnhance,
             ...(engine === 'flux-2-pro' ? { promptUpsampling } : {}),
             ...(engine === 'flux-1.1-pro-ultra' ? { raw: rawMode } : {}),
             ...(engine === 'flux-2-flex' ? { steps: flexSteps, guidance: flexGuidance } : {}),
@@ -115,6 +123,11 @@ export default function PhotoStudio() {
       }
 
       if (results.length > 0) {
+        // Deduct credits: enhanced = 2 per image, standard = 1 per image
+        const perImage = (enhance && canEnhance) ? 2 : 1;
+        const totalCost = results.length * perImage;
+        deductCredits(totalCost);
+
         setGeneratedUrls((prev) => [...results, ...prev]);
         addImages(results.map((url) => ({
           modelId: selectedModel.id,
@@ -407,41 +420,70 @@ export default function PhotoStudio() {
                   </div>
                 </FieldGroup>
 
-                {/* Premium Enhancement */}
-                <div className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-violet-600/10 to-fuchsia-600/10 border border-violet-500/20">
-                  <div className="flex items-center gap-2">
-                    <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-fuchsia-500 to-violet-600 flex items-center justify-center">
-                      <Sparkles className="h-3.5 w-3.5 text-white" />
+                {/* Premium Enhancement — only for 50+ credit tiers */}
+                {canEnhance ? (
+                  <div className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-violet-600/10 to-fuchsia-600/10 border border-violet-500/20">
+                    <div className="flex items-center gap-2">
+                      <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-fuchsia-500 to-violet-600 flex items-center justify-center">
+                        <Sparkles className="h-3.5 w-3.5 text-white" />
+                      </div>
+                      <div>
+                        <span className="text-[11px] font-semibold text-white block">PRO Enhance</span>
+                        <span className="text-[9px] text-zinc-500">4K · Eye Fix · Detail Boost · 2 credits/image</span>
+                      </div>
                     </div>
-                    <div>
-                      <span className="text-[11px] font-semibold text-white block">PRO Enhance</span>
-                      <span className="text-[9px] text-zinc-500">4K · Eye Fix · Detail Boost</span>
+                    <button
+                      onClick={() => setEnhance(!enhance)}
+                      className={`w-10 h-[22px] rounded-full transition-colors ${
+                        enhance ? 'bg-fuchsia-600' : 'bg-zinc-700'
+                      }`}
+                    >
+                      <div className={`w-[18px] h-[18px] rounded-full bg-white transition-transform mx-0.5 ${
+                        enhance ? 'translate-x-[18px]' : 'translate-x-0'
+                      }`} />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="p-3 rounded-lg bg-white/[0.02] border border-white/[0.06]">
+                    <div className="flex items-center gap-2">
+                      <div className="h-7 w-7 rounded-lg bg-zinc-800 flex items-center justify-center">
+                        <Sparkles className="h-3.5 w-3.5 text-zinc-600" />
+                      </div>
+                      <div>
+                        <span className="text-[11px] font-semibold text-zinc-500 block">PRO Enhance</span>
+                        <span className="text-[9px] text-zinc-600">Available with 50+ credit packs</span>
+                      </div>
                     </div>
                   </div>
-                  <button
-                    onClick={() => setEnhance(!enhance)}
-                    className={`w-10 h-[22px] rounded-full transition-colors ${
-                      enhance ? 'bg-fuchsia-600' : 'bg-zinc-700'
-                    }`}
-                  >
-                    <div className={`w-[18px] h-[18px] rounded-full bg-white transition-transform mx-0.5 ${
-                      enhance ? 'translate-x-[18px]' : 'translate-x-0'
-                    }`} />
-                  </button>
-                </div>
+                )}
               </TabsContent>
             </Tabs>
+
+            {/* Credit cost indicator */}
+            <div className="flex items-center justify-between px-1">
+              <span className="text-[10px] text-zinc-500 flex items-center gap-1">
+                <Coins className="h-3 w-3" /> Cost: {creditCost} credit{creditCost !== 1 ? 's' : ''}
+              </span>
+              <Link href="/pricing" className="text-[10px] text-violet-400 hover:text-violet-300">
+                {settings.credits} credits remaining
+              </Link>
+            </div>
 
             {/* Generate Button */}
             <Button
               onClick={handleGenerate}
-              disabled={isGenerating || !selectedModel}
+              disabled={isGenerating || !selectedModel || settings.credits < creditCost}
               className="w-full bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 text-white gap-2 h-11"
             >
               {isGenerating ? (
                 <>
                   <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
                   Generating...
+                </>
+              ) : settings.credits < creditCost ? (
+                <>
+                  <Coins className="h-4 w-4" />
+                  Buy Credits to Generate
                 </>
               ) : (
                 <>

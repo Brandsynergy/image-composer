@@ -7,11 +7,11 @@ import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import {
   UserPlus, Camera, Image as ImageIcon, Sparkles, ArrowRight,
-  Users, Heart, Clock,
+  Users, Heart, Clock, Coins,
 } from 'lucide-react';
 
 export default function Dashboard() {
-  const { models, images } = useAppStore();
+  const { models, images, settings } = useAppStore();
   const favoriteCount = images.filter((i) => i.isFavorite).length;
   const recentImages = images.slice(0, 8);
   const recentModels = models.slice(0, 4);
@@ -42,9 +42,10 @@ export default function Dashboard() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard title="AI Models" value={models.length} icon={Users} color="violet" href="/create" />
         <StatCard title="Generated Photos" value={images.length} icon={ImageIcon} color="fuchsia" href="/gallery" />
+        <StatCard title="Credits" value={settings.credits} icon={Coins} color="cyan" href="/pricing" />
         <StatCard title="Favorites" value={favoriteCount} icon={Heart} color="rose" href="/gallery" />
       </div>
 

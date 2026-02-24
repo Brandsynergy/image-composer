@@ -84,12 +84,25 @@ export interface GeneratedImage {
   seed?: number;
 }
 
+// ─── Credits ───────────────────────────────────────────────────
+export type CreditTier = 20 | 50 | 100;
+
+export interface CreditPack {
+  tier: CreditTier;
+  credits: number;
+  price: number;
+  enhanceEnabled: boolean;
+  label: string;
+}
+
 // ─── App State ─────────────────────────────────────────────────
 export interface AppSettings {
   replicateApiKey: string;
   defaultModel: string;
   defaultQuality: 'standard' | 'hd' | 'ultra';
   theme: 'dark' | 'light';
+  credits: number;
+  creditTier: CreditTier | null;
 }
 
 // ─── Generation Status ─────────────────────────────────────────

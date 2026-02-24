@@ -4,7 +4,8 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { idbStorage } from './idb-storage';
 import { v4 as uuidv4 } from 'uuid';
-import type { AIModel, GeneratedImage, AppSettings, GenerationJob, FaceConfig, BodyConfig, StyleConfig, SceneConfig, OutputConfig } from '@/types';
+import type { AIModel, GeneratedImage, AppSettings, GenerationJob, FaceConfig, BodyConfig, StyleConfig, SceneConfig, OutputConfig, CreditTier } from '@/types';
+import { CREDIT_PACKS } from './constants';
 
 // ─── Default Configs ───────────────────────────────────────────
 const defaultFace: FaceConfig = {
@@ -91,6 +92,10 @@ interface AppStore {
   // Settings
   settings: AppSettings;
   updateSettings: (updates: Partial<AppSettings>) => void;
+
+  // Credits
+  purchaseCredits: (tier: CreditTier) => void;
+  deductCredits: (amount: number) => boolean;
 
   // Defaults
   defaultFace: FaceConfig;
@@ -204,10 +209,31 @@ export const useAppStore = create<AppStore>()(
         defaultModel: 'black-forest-labs/flux-2-pro',
         defaultQuality: 'hd',
         theme: 'dark',
+        credits: 0,
+        creditTier: null,
       },
 
       updateSettings: (updates) => {
         set((state) => ({ settings: { ...state.settings, ...updates } }));
+      },
+
+      // ── Credits ──────────────────────────────────────────────
+      purchaseCredits: (tier) => {
+        const pack = CREDIT_PACKS.find((p) => p.tier === tier);
+        if (!pack) return;
+        // No rollover — replaces current balance
+        set((state) => ({
+          settings: { ...state.settings, credits: pack.credits, creditTier: tier },
+        }));
+      },
+
+      deductCredits: (amount) => {
+        const { settings: s } = get();
+        if (s.credits < amount) return false;
+        set((state) => ({
+          settings: { ...state.settings, credits: state.settings.credits - amount },
+        }));
+        return true;
       },
 
       // ── Defaults ────────────────────────────────────────────
