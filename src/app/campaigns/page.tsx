@@ -128,7 +128,6 @@ export default function Campaigns() {
   const [overlayEnabled, setOverlayEnabled] = useState(false);
   const [overlayText, setOverlayText] = useState('');
   const [overlayPosition, setOverlayPosition] = useState<TextPosition>('bottom');
-  const [productDesc, setProductDesc] = useState('');
 
   // Form state
   const [name, setName] = useState('');
@@ -253,7 +252,6 @@ export default function Campaigns() {
           outputFormat: 'png',
           outputQuality: 95,
           enhance: true,
-          ...(productDesc.trim() ? { productDescription: productDesc.trim() } : {}),
         }),
       });
 
@@ -468,20 +466,6 @@ export default function Campaigns() {
                     )}
                   </div>
 
-                  {/* Product Description for AI */}
-                  <div>
-                    <Label className="text-[11px] text-zinc-400 mb-1.5 block">Describe the product for AI generation</Label>
-                    <Input
-                      value={productDesc}
-                      onChange={(e) => setProductDesc(e.target.value)}
-                      placeholder="e.g. Prettirootz Nettle Shampoo — black and green bottle with gold R logo"
-                      className="bg-white/5 border-white/10 text-white text-xs placeholder:text-zinc-600"
-                      maxLength={120}
-                    />
-                    <p className="text-[9px] text-zinc-600 mt-1">AI will use image-to-image to place this product in the model’s hands.</p>
-                  </div>
-
-                  <Separator className="bg-white/[0.06]" />
 
                   {/* Text Overlay */}
                   <div>
