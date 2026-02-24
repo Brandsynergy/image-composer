@@ -96,6 +96,7 @@ interface AppStore {
   // Credits
   purchaseCredits: (tier: CreditTier) => void;
   deductCredits: (amount: number) => boolean;
+  grantFreeTrial: () => void;
 
   // User Auth
   user: AppUser | null;
@@ -212,8 +213,9 @@ export const useAppStore = create<AppStore>()(
         defaultModel: 'black-forest-labs/flux-2-pro',
         defaultQuality: 'hd',
         theme: 'dark',
-        credits: 0,
+        credits: 2,
         creditTier: null,
+        freeTrialUsed: false,
       },
 
       updateSettings: (updates) => {
@@ -237,6 +239,14 @@ export const useAppStore = create<AppStore>()(
           settings: { ...state.settings, credits: state.settings.credits - amount },
         }));
         return true;
+      },
+
+      grantFreeTrial: () => {
+        const { settings: s } = get();
+        if (s.freeTrialUsed) return;
+        set((state) => ({
+          settings: { ...state.settings, credits: 2, freeTrialUsed: true },
+        }));
       },
 
       // ── User Auth ─────────────────────────────────────────────

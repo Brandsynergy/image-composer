@@ -1,23 +1,79 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useAppStore } from '@/lib/store';
 import { CREDIT_PACKS } from '@/lib/constants';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
-  Coins, Sparkles, Check, X, ImageIcon, Zap, ShieldCheck,
+  Coins, Check, X, Zap, ShieldCheck, Loader2, CheckCircle2, XCircle,
 } from 'lucide-react';
 import type { CreditTier } from '@/types';
 
 export default function Pricing() {
   const { settings, purchaseCredits } = useAppStore();
   const { credits, creditTier } = settings;
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const [loadingTier, setLoadingTier] = useState<CreditTier | null>(null);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [cancelMessage, setCancelMessage] = useState('');
 
-  const handlePurchase = (tier: CreditTier) => {
-    // TODO: integrate payment provider (Stripe, etc.)
-    // For now, credits are added directly on purchase
-    purchaseCredits(tier);
+  // Handle Stripe redirect back
+  useEffect(() => {
+    const sessionId = searchParams.get('session_id');
+    const canceled = searchParams.get('canceled');
+
+    if (canceled) {
+      setCancelMessage('Payment was canceled. No credits were charged.');
+      router.replace('/pricing', { scroll: false });
+      return;
+    }
+
+    if (sessionId) {
+      // Verify the session and grant credits
+      fetch(`/api/stripe/checkout?session_id=${sessionId}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.tier) {
+            purchaseCredits(Number(data.tier) as CreditTier);
+            setSuccessMessage(
+              `Payment successful! ${CREDIT_PACKS.find((p) => p.tier === Number(data.tier))?.credits ?? data.tier} credits added.`
+            );
+          }
+        })
+        .catch(() => {
+          // Session verification failed — credits may have already been applied
+        })
+        .finally(() => {
+          router.replace('/pricing', { scroll: false });
+        });
+    }
+  }, [searchParams, purchaseCredits, router]);
+
+  const handlePurchase = async (tier: CreditTier) => {
+    setLoadingTier(tier);
+    setSuccessMessage('');
+    setCancelMessage('');
+    try {
+      const res = await fetch('/api/stripe/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tier }),
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        setCancelMessage(data.error || 'Could not create checkout session.');
+        setLoadingTier(null);
+      }
+    } catch {
+      setCancelMessage('Something went wrong. Please try again.');
+      setLoadingTier(null);
+    }
   };
 
   return (
@@ -29,6 +85,20 @@ export default function Pricing() {
           Pay as you go. No subscriptions. No rollovers.
         </p>
       </div>
+
+      {/* Success / Cancel Banners */}
+      {successMessage && (
+        <div className="flex items-center gap-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 p-4 text-sm text-emerald-400">
+          <CheckCircle2 className="h-5 w-5 shrink-0" />
+          {successMessage}
+        </div>
+      )}
+      {cancelMessage && (
+        <div className="flex items-center gap-2 rounded-lg bg-red-500/10 border border-red-500/20 p-4 text-sm text-red-400">
+          <XCircle className="h-5 w-5 shrink-0" />
+          {cancelMessage}
+        </div>
+      )}
 
       {/* Current Balance */}
       <Card className="bg-gradient-to-r from-violet-600/10 to-fuchsia-600/10 border-violet-500/20">
@@ -56,6 +126,7 @@ export default function Pricing() {
           const isActive = creditTier === pack.tier;
           const perCredit = (pack.price / pack.credits).toFixed(2);
           const isBestValue = pack.tier === 100;
+          const isLoading = loadingTier === pack.tier;
 
           return (
             <Card
@@ -100,13 +171,18 @@ export default function Pricing() {
                 {/* Purchase Button */}
                 <Button
                   onClick={() => handlePurchase(pack.tier)}
+                  disabled={isLoading || loadingTier !== null}
                   className={`w-full gap-2 h-10 ${
                     isBestValue
                       ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 text-white'
                       : 'bg-white/[0.06] hover:bg-white/[0.1] text-white border border-white/[0.08]'
                   }`}
                 >
-                  <Zap className="h-3.5 w-3.5" />
+                  {isLoading ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Zap className="h-3.5 w-3.5" />
+                  )}
                   {isActive ? 'Buy Again' : 'Buy Credits'}
                 </Button>
 

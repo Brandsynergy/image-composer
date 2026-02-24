@@ -109,6 +109,7 @@ export interface AppSettings {
   theme: 'dark' | 'light';
   credits: number;
   creditTier: CreditTier | null;
+  freeTrialUsed: boolean;
 }
 
 // ─── Generation Status ─────────────────────────────────────────
