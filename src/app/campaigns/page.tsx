@@ -26,7 +26,7 @@ const CAMPAIGN_MOODS = ['Aspirational', 'Bold', 'Elegant', 'Playful', 'Edgy', 'W
 
 // Client-side Canvas text overlay — pixel-perfect, zero AI credits, 100% correct spelling
 function addCanvasTextOverlay(imageDataUrl: string, text: string): Promise<string> {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     const img = new Image();
     img.onload = () => {
       const canvas = document.createElement('canvas');
@@ -35,23 +35,34 @@ function addCanvasTextOverlay(imageDataUrl: string, text: string): Promise<strin
       const ctx = canvas.getContext('2d');
       if (!ctx) { resolve(imageDataUrl); return; }
 
-      // Draw base image
       ctx.drawImage(img, 0, 0);
 
       // Split on em dash for two-line layout (hook — brand)
-      const lines = text.includes('\u2014')
+      const parts = text.includes('\u2014')
         ? text.split('\u2014').map((s) => s.trim()).filter(Boolean)
         : [text];
 
-      // Font sizing relative to image
-      const primarySize = Math.round(img.height * 0.05);
-      const secondarySize = Math.round(img.height * 0.032);
+      const maxWidth = img.width * 0.85;
+
+      // Auto-fit: shrink font until text fits within maxWidth
+      function fitFont(label: string, maxSize: number, weight: string): number {
+        let sz = maxSize;
+        while (sz > 14) {
+          ctx!.font = `${weight} ${sz}px "Helvetica Neue", Helvetica, Arial, sans-serif`;
+          if (ctx!.measureText(label.toUpperCase()).width <= maxWidth) break;
+          sz -= 2;
+        }
+        return sz;
+      }
+
+      const primarySize = fitFont(parts[0], Math.round(img.height * 0.055), '800');
+      const secondarySize = parts[1] ? fitFont(parts[1], Math.round(img.height * 0.035), '600') : 0;
       const lineGap = primarySize * 0.5;
 
       // Backdrop dimensions
-      const totalTextHeight = primarySize + (lines.length > 1 ? secondarySize + lineGap : 0);
+      const totalH = primarySize + (parts.length > 1 ? secondarySize + lineGap : 0);
       const pad = primarySize * 1.2;
-      const backdropH = totalTextHeight + pad * 2;
+      const backdropH = totalH + pad * 2;
       const backdropY = img.height - backdropH;
 
       // Gradient backdrop: transparent → dark
@@ -66,41 +77,40 @@ function addCanvasTextOverlay(imageDataUrl: string, text: string): Promise<strin
       const cx = img.width / 2;
 
       // Primary line (hook text)
-      const py = lines.length === 1
+      const py = parts.length === 1
         ? backdropY + backdropH / 2
         : backdropY + pad + primarySize / 2 + primarySize * 0.15;
       ctx.font = `800 ${primarySize}px "Helvetica Neue", Helvetica, Arial, sans-serif`;
-      // Shadow
       ctx.fillStyle = 'rgba(0,0,0,0.6)';
-      ctx.fillText(lines[0].toUpperCase(), cx + 2, py + 2);
-      // Text
+      ctx.fillText(parts[0].toUpperCase(), cx + 2, py + 2);
       ctx.fillStyle = '#FFFFFF';
-      ctx.fillText(lines[0].toUpperCase(), cx, py);
+      ctx.fillText(parts[0].toUpperCase(), cx, py);
 
       // Secondary line (brand name)
-      if (lines.length > 1 && lines[1]) {
+      if (parts.length > 1 && parts[1]) {
         const sy = py + primarySize / 2 + lineGap + secondarySize / 2;
         ctx.font = `600 ${secondarySize}px "Helvetica Neue", Helvetica, Arial, sans-serif`;
         ctx.fillStyle = 'rgba(255,255,255,0.75)';
-        ctx.fillText(lines[1].toUpperCase(), cx, sy);
+        ctx.fillText(parts[1].toUpperCase(), cx, sy);
       }
 
       resolve(canvas.toDataURL('image/png'));
     };
-    img.onerror = () => resolve(imageDataUrl); // Fallback: return original
+    img.onerror = () => resolve(imageDataUrl);
     img.src = imageDataUrl;
   });
 }
 
+// Hook templates: kept to 2-3 words max for clean overlay rendering
 const HOOK_TEMPLATES: Record<string, string[]> = {
-  Aspirational: ['Dream Bigger', 'Elevate Everything', 'Rise Above', 'Your Best Self Awaits', 'Reach Higher'],
-  Bold: ['Own the Moment', 'Be Unstoppable', 'No Limits', 'Break the Rules', 'Go All In'],
-  Elegant: ['Timeless Beauty', 'Pure Sophistication', 'Effortless Grace', 'Refined Luxury', 'Simply Stunning'],
-  Playful: ["Life's a Vibe", 'Make It Pop', 'Stay Wild', 'Good Times Only', 'Fun Never Stops'],
-  Edgy: ['Defy the Norm', 'Stand Out', 'Raw & Real', 'Unapologetically You', 'Dare to Be Different'],
-  Warm: ['Feel the Warmth', 'Made with Love', 'Home Is Here', 'Comfort Redefined', 'Embrace the Glow'],
-  Corporate: ['Lead the Future', 'Built for Excellence', 'Trusted by Many', 'Innovation Starts Here', 'Results That Matter'],
-  Luxurious: ['Indulge Yourself', 'The Finest Things', 'Beyond Ordinary', 'Unmatched Elegance', 'Worth Every Moment'],
+  Aspirational: ['Dream Bigger', 'Rise Above', 'Reach Higher', 'Level Up', 'Aim Higher'],
+  Bold: ['Own It', 'No Limits', 'Go All In', 'Be Bold', 'Stay Strong'],
+  Elegant: ['Pure Grace', 'Stay Classy', 'True Beauty', 'So Refined', 'Simply Chic'],
+  Playful: ['Stay Wild', 'Make It Pop', 'Good Vibes', 'Stay Fun', 'Live Big'],
+  Edgy: ['Stand Out', 'Raw & Real', 'Be Fearless', 'Break Free', 'Stay Edgy'],
+  Warm: ['Feel Warm', 'Made Fresh', 'Pure Comfort', 'Stay Cozy', 'Glow Up'],
+  Corporate: ['Lead Now', 'Think Big', 'Stay Trusted', 'Go Further', 'Excel More'],
+  Luxurious: ['Pure Luxury', 'Stay Golden', 'So Premium', 'Live Grand', 'Top Tier'],
 };
 
 function generateHook(mood: string, brandName?: string): string {
@@ -229,7 +239,6 @@ export default function Campaigns() {
         customPrompt: [
           campaign.contentBrief,
           campaign.brandName ? `for ${campaign.brandName} brand campaign` : '',
-          (campaign.productImages || []).length > 0 ? 'holding and showcasing a branded product' : '',
         ].filter(Boolean).join('. '),
       };
 
@@ -427,7 +436,8 @@ export default function Campaigns() {
                   <div>
                     <div className="flex items-center justify-between mb-3">
                       <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-                        <Package className="h-4 w-4 text-violet-400" /> Product Images
+                        <Package className="h-4 w-4 text-violet-400" /> Product Reference
+                        <span className="text-[9px] text-zinc-600 font-normal">(visual guide)</span>
                       </h3>
                       <Button variant="ghost" size="sm" onClick={() => fileInputRef.current?.click()} className="text-violet-400 hover:text-white text-xs gap-1 h-7">
                         <Upload className="h-3 w-3" /> Upload
@@ -487,9 +497,9 @@ export default function Campaigns() {
                           <Input
                             value={overlayText}
                             onChange={(e) => setOverlayText(e.target.value)}
-                            placeholder="e.g. Dream Bigger — Nike"
+                            placeholder="e.g. Dream Bigger"
                             className="bg-white/5 border-white/10 text-white text-sm placeholder:text-zinc-600 flex-1"
-                            maxLength={60}
+                            maxLength={30}
                           />
                           <Button
                             variant="ghost"
@@ -501,7 +511,7 @@ export default function Campaigns() {
                             <RefreshCw className="h-3 w-3" /> Generate
                           </Button>
                         </div>
-                        <p className="text-[10px] text-zinc-500">AI will render this text as a bold headline overlay on the final image.</p>
+                        <p className="text-[10px] text-zinc-500">2-3 words recommended. Use — to split hook and brand (e.g. "Go All In — Nike").</p>
                       </div>
                     )}
                   </div>
