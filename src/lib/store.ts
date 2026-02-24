@@ -1,7 +1,8 @@
 'use client';
 
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import { idbStorage } from './idb-storage';
 import { v4 as uuidv4 } from 'uuid';
 import type { AIModel, GeneratedImage, Campaign, AppSettings, GenerationJob, FaceConfig, BodyConfig, StyleConfig, SceneConfig, OutputConfig } from '@/types';
 
@@ -264,6 +265,7 @@ export const useAppStore = create<AppStore>()(
     }),
     {
       name: 'image-composer-storage',
+      storage: createJSONStorage(() => idbStorage),
       partialize: (state) => ({
         models: state.models,
         activeModelId: state.activeModelId,
