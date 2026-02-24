@@ -6,12 +6,12 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import {
-  UserPlus, Camera, Image as ImageIcon, Megaphone, Sparkles, ArrowRight,
+  UserPlus, Camera, Image as ImageIcon, Sparkles, ArrowRight,
   Users, Heart, Clock,
 } from 'lucide-react';
 
 export default function Dashboard() {
-  const { models, images, campaigns } = useAppStore();
+  const { models, images } = useAppStore();
   const favoriteCount = images.filter((i) => i.isFavorite).length;
   const recentImages = images.slice(0, 8);
   const recentModels = models.slice(0, 4);
@@ -28,7 +28,7 @@ export default function Dashboard() {
           </div>
           <h1 className="text-3xl font-bold tracking-tight text-white mb-2">Create Viral AI Models</h1>
           <p className="text-zinc-400 max-w-xl mb-6">
-            Build hyper-realistic AI personas, generate stunning content, and launch campaigns that stop the scroll.
+            Build hyper-realistic AI personas and generate stunning content that stops the scroll.
           </p>
           <div className="flex gap-3">
             <Button asChild className="bg-violet-600 hover:bg-violet-700 text-white gap-2">
@@ -42,20 +42,18 @@ export default function Dashboard() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <StatCard title="AI Models" value={models.length} icon={Users} color="violet" href="/create" />
         <StatCard title="Generated Photos" value={images.length} icon={ImageIcon} color="fuchsia" href="/gallery" />
-        <StatCard title="Campaigns" value={campaigns.length} icon={Megaphone} color="cyan" href="/campaigns" />
         <StatCard title="Favorites" value={favoriteCount} icon={Heart} color="rose" href="/gallery" />
       </div>
 
       {/* Quick Actions */}
       <div>
         <h2 className="text-lg font-semibold text-white mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <QuickActionCard title="Create AI Model" description="Build a new persona from scratch with face, body, and style DNA" icon={UserPlus} href="/create" gradient="from-violet-600/20 to-violet-600/5" />
           <QuickActionCard title="Photo Studio" description="Generate stunning photos with full scene, lighting, and pose control" icon={Camera} href="/studio" gradient="from-fuchsia-600/20 to-fuchsia-600/5" />
-          <QuickActionCard title="Launch Campaign" description="Create branded content series for advertising and social media" icon={Megaphone} href="/campaigns" gradient="from-cyan-600/20 to-cyan-600/5" />
         </div>
       </div>
 

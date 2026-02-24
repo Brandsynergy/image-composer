@@ -79,28 +79,9 @@ export interface GeneratedImage {
   scene: SceneConfig;
   output: OutputConfig;
   createdAt: string;
-  campaignId?: string;
   tags: string[];
   isFavorite: boolean;
   seed?: number;
-}
-
-// ─── Campaigns ─────────────────────────────────────────────────
-export interface Campaign {
-  id: string;
-  name: string;
-  description: string;
-  brandName: string;
-  brandColors: string[];
-  mood: string;
-  targetPlatforms: string[];
-  modelIds: string[];
-  imageIds: string[];
-  productImages: string[];
-  createdAt: string;
-  updatedAt: string;
-  status: 'draft' | 'active' | 'completed';
-  contentBrief: string;
 }
 
 // ─── App State ─────────────────────────────────────────────────

@@ -8,7 +8,6 @@ import {
   UserPlus,
   Camera,
   Image,
-  Megaphone,
   Settings,
   Sparkles,
   ChevronLeft,
@@ -23,7 +22,6 @@ const navItems = [
   { href: '/create', label: 'Model Creator', icon: UserPlus },
   { href: '/studio', label: 'Photo Studio', icon: Camera },
   { href: '/gallery', label: 'Gallery', icon: Image },
-  { href: '/campaigns', label: 'Campaigns', icon: Megaphone },
   { href: '/settings', label: 'Settings', icon: Settings },
 ];
 

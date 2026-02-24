@@ -4,7 +4,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { idbStorage } from './idb-storage';
 import { v4 as uuidv4 } from 'uuid';
-import type { AIModel, GeneratedImage, Campaign, AppSettings, GenerationJob, FaceConfig, BodyConfig, StyleConfig, SceneConfig, OutputConfig } from '@/types';
+import type { AIModel, GeneratedImage, AppSettings, GenerationJob, FaceConfig, BodyConfig, StyleConfig, SceneConfig, OutputConfig } from '@/types';
 
 // ─── Default Configs ───────────────────────────────────────────
 const defaultFace: FaceConfig = {
@@ -81,13 +81,6 @@ interface AppStore {
   deleteImage: (id: string) => void;
   toggleFavorite: (id: string) => void;
   tagImage: (id: string, tags: string[]) => void;
-  assignToCampaign: (imageId: string, campaignId: string) => void;
-
-  // Campaigns
-  campaigns: Campaign[];
-  addCampaign: (campaign: Omit<Campaign, 'id' | 'createdAt' | 'updatedAt'>) => Campaign;
-  updateCampaign: (id: string, updates: Partial<Campaign>) => void;
-  deleteCampaign: (id: string) => void;
 
   // Generation Jobs
   activeJobs: GenerationJob[];
@@ -189,47 +182,6 @@ export const useAppStore = create<AppStore>()(
         }));
       },
 
-      assignToCampaign: (imageId, campaignId) => {
-        set((state) => ({
-          images: state.images.map((i) =>
-            i.id === imageId ? { ...i, campaignId } : i
-          ),
-          campaigns: state.campaigns.map((c) =>
-            c.id === campaignId
-              ? { ...c, imageIds: [...new Set([...c.imageIds, imageId])] }
-              : c
-          ),
-        }));
-      },
-
-      // ── Campaigns ───────────────────────────────────────────
-      campaigns: [],
-
-      addCampaign: (campaignData) => {
-        const campaign: Campaign = {
-          ...campaignData,
-          id: uuidv4(),
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
-        set((state) => ({ campaigns: [campaign, ...state.campaigns] }));
-        return campaign;
-      },
-
-      updateCampaign: (id, updates) => {
-        set((state) => ({
-          campaigns: state.campaigns.map((c) =>
-            c.id === id ? { ...c, ...updates, updatedAt: new Date().toISOString() } : c
-          ),
-        }));
-      },
-
-      deleteCampaign: (id) => {
-        set((state) => ({
-          campaigns: state.campaigns.filter((c) => c.id !== id),
-        }));
-      },
-
       // ── Jobs ────────────────────────────────────────────────
       activeJobs: [],
       addJob: (job) => set((state) => ({ activeJobs: [...state.activeJobs, job] })),
@@ -270,7 +222,6 @@ export const useAppStore = create<AppStore>()(
         models: state.models,
         activeModelId: state.activeModelId,
         images: state.images,
-        campaigns: state.campaigns,
         settings: state.settings,
       }),
       onRehydrateStorage: () => (state) => {

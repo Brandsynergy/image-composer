@@ -12,7 +12,7 @@ import { Key, Save, Trash2, Database, AlertTriangle, Check, ExternalLink } from 
 import { del, createStore } from 'idb-keyval';
 
 export default function Settings() {
-  const { settings, updateSettings, models, images, campaigns } = useAppStore();
+  const { settings, updateSettings, models, images } = useAppStore();
   const [apiKey, setApiKey] = useState('');
   const [saved, setSaved] = useState(false);
 
@@ -88,7 +88,7 @@ export default function Settings() {
             All data is stored locally in your browser. No data is sent to external servers except for image generation via Replicate.
           </p>
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             <div className="p-3 rounded-lg bg-white/[0.03] border border-white/[0.06] text-center">
               <p className="text-lg font-bold text-white">{models.length}</p>
               <p className="text-[10px] text-zinc-500">AI Models</p>
@@ -96,10 +96,6 @@ export default function Settings() {
             <div className="p-3 rounded-lg bg-white/[0.03] border border-white/[0.06] text-center">
               <p className="text-lg font-bold text-white">{images.length}</p>
               <p className="text-[10px] text-zinc-500">Generated Images</p>
-            </div>
-            <div className="p-3 rounded-lg bg-white/[0.03] border border-white/[0.06] text-center">
-              <p className="text-lg font-bold text-white">{campaigns.length}</p>
-              <p className="text-[10px] text-zinc-500">Campaigns</p>
             </div>
           </div>
 
@@ -110,7 +106,7 @@ export default function Settings() {
               <p className="text-sm text-white font-medium flex items-center gap-2">
                 <AlertTriangle className="h-4 w-4 text-yellow-400" /> Clear All Data
               </p>
-              <p className="text-xs text-zinc-500">Permanently delete all models, images, campaigns, and settings.</p>
+              <p className="text-xs text-zinc-500">Permanently delete all models, images, and settings.</p>
             </div>
             <Button variant="ghost" onClick={handleClearData} className="text-red-400 hover:text-red-300 hover:bg-red-500/10 gap-2">
               <Trash2 className="h-4 w-4" /> Clear Data
@@ -125,7 +121,7 @@ export default function Settings() {
           <h2 className="text-sm font-semibold text-white">About IMAGE COMPOSER</h2>
           <p className="text-xs text-zinc-400">
             Professional AI model & influencer generation studio. Create hyper-realistic AI personas and generate
-            stunning photo content for advertising, brands, and social media campaigns.
+            stunning photo content for advertising, brands, and social media.
           </p>
           <p className="text-xs text-zinc-500">
             Powered by FLUX via Replicate. Built with Next.js, Tailwind CSS, and shadcn/ui.
