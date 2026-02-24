@@ -112,9 +112,10 @@ export default function CreateModel() {
           }),
         });
         const data = await res.json();
-        if (data.output && typeof data.output === 'string' && data.output.startsWith('http')) {
-          tempModel.thumbnail = data.output;
-          tempModel.referenceImages = [data.output];
+        const imgUrl = data.output;
+        if (imgUrl && typeof imgUrl === 'string' && (imgUrl.startsWith('http') || imgUrl.startsWith('data:'))) {
+          tempModel.thumbnail = imgUrl;
+          tempModel.referenceImages = [imgUrl];
         }
       } catch (err) {
         console.error('Generation failed:', err);

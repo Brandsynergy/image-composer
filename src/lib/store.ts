@@ -274,7 +274,23 @@ export const useAppStore = create<AppStore>()(
         settings: state.settings,
       }),
       onRehydrateStorage: () => (state) => {
-        state?.setHasHydrated(true);
+        if (state) {
+          // Purge images/thumbnails with expired Replicate URLs (only data: URLs persist)
+          const isValid = (url?: string) => !url || url.startsWith('data:');
+
+          const cleanImages = state.images.filter((img) => isValid(img.url));
+          const cleanModels = state.models.map((m) => ({
+            ...m,
+            thumbnail: isValid(m.thumbnail) ? m.thumbnail : undefined,
+            referenceImages: m.referenceImages.filter((r) => isValid(r)),
+          }));
+
+          if (cleanImages.length !== state.images.length || cleanModels.some((m, i) => m !== state.models[i])) {
+            useAppStore.setState({ images: cleanImages, models: cleanModels });
+          }
+
+          state.setHasHydrated(true);
+        }
       },
     }
   )

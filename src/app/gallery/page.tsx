@@ -99,7 +99,7 @@ export default function Gallery() {
               {/* Image — click to open lightbox */}
               <div className="relative cursor-pointer" onClick={() => setSelectedImage(image.id)}>
                 <div className="aspect-[4/5]">
-                  <img src={image.url} alt="" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.02]" loading="lazy" />
+                  <img src={image.url} alt="" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.02]" loading="lazy" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
                 </div>
                 {image.isFavorite && (
                   <div className="absolute top-2 right-2">
@@ -164,7 +164,7 @@ export default function Gallery() {
             <div className="flex flex-col md:flex-row">
               {/* Image */}
               <div className="flex-1 bg-black flex items-center justify-center min-h-[400px]">
-                <img src={selectedImg.url} alt="" className="max-h-[70vh] w-auto object-contain" />
+                <img src={selectedImg.url} alt="" className="max-h-[70vh] w-auto object-contain" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
               </div>
 
               {/* Details Sidebar */}

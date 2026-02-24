@@ -159,7 +159,7 @@ export default function PhotoStudio() {
                     >
                       <div className="h-6 w-6 rounded-full bg-gradient-to-br from-violet-600/30 to-fuchsia-600/30 flex items-center justify-center overflow-hidden">
                         {m.thumbnail ? (
-                          <img src={m.thumbnail} alt="" className="w-full h-full object-cover" />
+                          <img src={m.thumbnail} alt="" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
                         ) : (
                           <Users className="h-3 w-3 text-violet-400" />
                         )}
@@ -480,7 +480,7 @@ export default function PhotoStudio() {
             {generatedUrls.map((url, i) => (
               <div key={`${url}-${i}`} className="rounded-xl overflow-hidden border border-white/[0.06] hover:border-violet-500/30 transition-all bg-white/[0.02]">
                 <div className="aspect-[4/5]">
-                  <img src={url} alt="" className="w-full h-full object-cover" />
+                  <img src={url} alt="" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
                 </div>
                 <div className="flex items-center justify-between px-3 py-2.5 border-t border-white/[0.04]">
                   <a

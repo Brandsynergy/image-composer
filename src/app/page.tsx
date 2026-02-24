@@ -74,7 +74,7 @@ export default function Dashboard() {
                 <CardContent className="p-4">
                   <div className="aspect-square rounded-lg bg-gradient-to-br from-violet-600/20 to-fuchsia-600/20 mb-3 flex items-center justify-center overflow-hidden">
                     {model.thumbnail ? (
-                      <img src={model.thumbnail} alt={model.name} className="w-full h-full object-cover rounded-lg" />
+                      <img src={model.thumbnail} alt={model.name} className="w-full h-full object-cover rounded-lg" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
                     ) : (
                       <Users className="h-8 w-8 text-violet-400/50" />
                     )}
@@ -106,7 +106,7 @@ export default function Dashboard() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {recentImages.map((image) => (
               <div key={image.id} className="group relative aspect-[4/5] rounded-lg overflow-hidden bg-white/[0.02] border border-white/[0.06] hover:border-violet-500/30 transition-all cursor-pointer">
-                <img src={image.url} alt="" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                <img src={image.url} alt="" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
             ))}
