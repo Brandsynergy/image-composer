@@ -6,15 +6,19 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent,
+  DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
 import { EXPORT_PRESETS } from '@/lib/constants';
 import {
   Heart, Download, Trash2, Search, Filter, Grid3X3,
   LayoutGrid, X, ExternalLink, Tag, Calendar, Camera,
-  Image as ImageIcon, SlidersHorizontal,
+  Image as ImageIcon, SlidersHorizontal, FolderPlus, Megaphone, Check,
 } from 'lucide-react';
 
 export default function Gallery() {
-  const { images, models, toggleFavorite, deleteImage } = useAppStore();
+  const { images, models, campaigns, toggleFavorite, deleteImage, assignToCampaign } = useAppStore();
   const [filter, setFilter] = useState<'all' | 'favorites' | string>('all');
   const [search, setSearch] = useState('');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -110,13 +114,43 @@ export default function Gallery() {
 
               {/* Action bar — always visible */}
               <div className="flex items-center justify-between px-3 py-2.5 bg-white/[0.02] border-t border-white/[0.04]">
-                <button
-                  onClick={() => toggleFavorite(image.id)}
-                  className="p-1.5 rounded-lg hover:bg-white/[0.06] transition-colors"
-                  title={image.isFavorite ? 'Unfavorite' : 'Favorite'}
-                >
-                  <Heart className={`h-4 w-4 ${image.isFavorite ? 'text-rose-400 fill-rose-400' : 'text-zinc-500 hover:text-rose-400'}`} />
-                </button>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => toggleFavorite(image.id)}
+                    className="p-1.5 rounded-lg hover:bg-white/[0.06] transition-colors"
+                    title={image.isFavorite ? 'Unfavorite' : 'Favorite'}
+                  >
+                    <Heart className={`h-4 w-4 ${image.isFavorite ? 'text-rose-400 fill-rose-400' : 'text-zinc-500 hover:text-rose-400'}`} />
+                  </button>
+                  {campaigns.length > 0 && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          className={`p-1.5 rounded-lg hover:bg-white/[0.06] transition-colors ${
+                            image.campaignId ? 'text-cyan-400' : 'text-zinc-500 hover:text-cyan-400'
+                          }`}
+                          title="Add to Campaign"
+                        >
+                          <FolderPlus className="h-4 w-4" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="bg-[#1a1a1e] border-white/10 text-white min-w-[180px]">
+                        <DropdownMenuLabel className="text-[10px] text-zinc-500 uppercase">Add to Campaign</DropdownMenuLabel>
+                        <DropdownMenuSeparator className="bg-white/[0.06]" />
+                        {campaigns.map((c) => (
+                          <DropdownMenuItem
+                            key={c.id}
+                            onClick={() => assignToCampaign(image.id, c.id)}
+                            className="text-xs text-zinc-300 hover:text-white focus:bg-violet-600/20 focus:text-white gap-2 cursor-pointer"
+                          >
+                            {image.campaignId === c.id ? <Check className="h-3 w-3 text-cyan-400" /> : <Megaphone className="h-3 w-3 text-zinc-500" />}
+                            {c.name}
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+                </div>
                 <div className="flex items-center gap-1">
                   <a
                     href={image.url}
@@ -217,6 +251,32 @@ export default function Gallery() {
                     </div>
                   )}
                 </div>
+
+                {/* Campaign Assignment */}
+                {campaigns.length > 0 && (
+                  <div>
+                    <span className="text-[10px] text-zinc-500 uppercase tracking-wider block mb-2">Campaign</span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {campaigns.map((c) => {
+                        const isAssigned = selectedImg.campaignId === c.id;
+                        return (
+                          <button
+                            key={c.id}
+                            onClick={() => assignToCampaign(selectedImg.id, c.id)}
+                            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-medium border transition-all ${
+                              isAssigned
+                                ? 'bg-cyan-600/20 border-cyan-500/50 text-cyan-300'
+                                : 'bg-white/[0.03] border-white/[0.06] text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.06]'
+                            }`}
+                          >
+                            {isAssigned ? <Check className="h-3 w-3" /> : <Megaphone className="h-3 w-3" />}
+                            {c.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
 
                 {/* Export Options */}
                 <div>

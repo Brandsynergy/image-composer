@@ -18,9 +18,14 @@ import {
   MOODS, TIMES_OF_DAY, BACKGROUNDS, ASPECT_RATIOS, VIRAL_PRESETS,
 } from '@/lib/constants';
 import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent,
+  DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
+import {
   Camera, Sparkles, Wand2, Download, Heart, Users, Zap,
   Sun, MapPin, PersonStanding, Shirt, Aperture, Move3D,
   Palette, Clock, ImageIcon, RotateCcw, Copy, Trash2,
+  FolderPlus, Megaphone, Check,
 } from 'lucide-react';
 
 function OptionPicker({ options, value, onChange }: { options: string[]; value: string; onChange: (v: string) => void }) {
@@ -44,7 +49,7 @@ function OptionPicker({ options, value, onChange }: { options: string[]; value: 
 }
 
 export default function PhotoStudio() {
-  const { models, settings, addImage, addImages, toggleFavorite, images, _hasHydrated } = useAppStore();
+  const { models, settings, addImage, addImages, toggleFavorite, images, campaigns, assignToCampaign, _hasHydrated } = useAppStore();
   const [selectedModelId, setSelectedModelId] = useState<string>(models[0]?.id || '');
   const [scene, setScene] = useState<SceneConfig>({ ...defaultScene });
   const [output, setOutput] = useState<OutputConfig>({ ...defaultOutput });
@@ -483,15 +488,49 @@ export default function PhotoStudio() {
                   <img src={url} alt="" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
                 </div>
                 <div className="flex items-center justify-between px-3 py-2.5 border-t border-white/[0.04]">
-                  <a
-                    href={url}
-                    download
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-600/20 text-violet-300 text-[11px] font-medium hover:bg-violet-600/30 transition-colors"
-                  >
-                    <Download className="h-3.5 w-3.5" /> Download
-                  </a>
+                  <div className="flex items-center gap-1">
+                    <a
+                      href={url}
+                      download
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-600/20 text-violet-300 text-[11px] font-medium hover:bg-violet-600/30 transition-colors"
+                    >
+                      <Download className="h-3.5 w-3.5" /> Download
+                    </a>
+                    {campaigns.length > 0 && (() => {
+                      const storeImg = images.find((img) => img.url === url);
+                      if (!storeImg) return null;
+                      return (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button
+                              className={`p-1.5 rounded-lg hover:bg-white/[0.06] transition-colors ${
+                                storeImg.campaignId ? 'text-cyan-400' : 'text-zinc-500 hover:text-cyan-400'
+                              }`}
+                              title="Add to Campaign"
+                            >
+                              <FolderPlus className="h-4 w-4" />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent className="bg-[#1a1a1e] border-white/10 text-white min-w-[180px]">
+                            <DropdownMenuLabel className="text-[10px] text-zinc-500 uppercase">Add to Campaign</DropdownMenuLabel>
+                            <DropdownMenuSeparator className="bg-white/[0.06]" />
+                            {campaigns.map((c) => (
+                              <DropdownMenuItem
+                                key={c.id}
+                                onClick={() => assignToCampaign(storeImg.id, c.id)}
+                                className="text-xs text-zinc-300 hover:text-white focus:bg-violet-600/20 focus:text-white gap-2 cursor-pointer"
+                              >
+                                {storeImg.campaignId === c.id ? <Check className="h-3 w-3 text-cyan-400" /> : <Megaphone className="h-3 w-3 text-zinc-500" />}
+                                {c.name}
+                              </DropdownMenuItem>
+                            ))}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      );
+                    })()}
+                  </div>
                   <button
                     onClick={() => setGeneratedUrls((prev) => prev.filter((_, idx) => idx !== i))}
                     className="p-1.5 rounded-lg hover:bg-red-500/10 transition-colors"
