@@ -39,8 +39,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <TooltipProvider delayDuration={0}>
         <div className="flex min-h-screen bg-[#0a0a0b] text-white">
           <Sidebar />
-          <main className="ml-[240px] flex-1 transition-all duration-300">
-            <div className="p-6">{children}</div>
+          <main className="flex-1 transition-all duration-300 md:ml-[240px]">
+            <div className="px-4 pt-[72px] pb-20 md:px-6 md:pt-6 md:pb-6">{children}</div>
           </main>
         </div>
       </TooltipProvider>
