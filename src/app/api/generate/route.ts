@@ -36,6 +36,15 @@ function extractUrl(output: unknown): string | null {
   return null;
 }
 
+// Fetch a remote image and convert to a base64 data URL so it persists in localStorage
+async function fetchAsDataUrl(url: string): Promise<string> {
+  const res = await fetch(url);
+  const buffer = await res.arrayBuffer();
+  const base64 = Buffer.from(buffer).toString('base64');
+  const contentType = res.headers.get('content-type') || 'image/png';
+  return `data:${contentType};base64,${base64}`;
+}
+
 type ModelId = 'flux-kontext-pro' | 'flux-2-pro' | 'flux-2-flex' | 'flux-1.1-pro-ultra' | 'flux-schnell';
 
 const MODEL_MAP: Record<ModelId, `${string}/${string}`> = {
@@ -230,7 +239,17 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    return NextResponse.json({ output: finalUrl, model: result.model, enhanced });
+    // Convert to base64 data URL so the image persists in localStorage
+    // (Replicate delivery URLs expire after a few hours)
+    let permanentUrl = finalUrl;
+    try {
+      permanentUrl = await fetchAsDataUrl(finalUrl);
+    } catch {
+      // If conversion fails, return the temporary URL as fallback
+      console.warn('Could not convert to data URL, returning temporary Replicate URL');
+    }
+
+    return NextResponse.json({ output: permanentUrl, model: result.model, enhanced });
   } catch (error) {
     console.error('Generation error:', error);
     return NextResponse.json(

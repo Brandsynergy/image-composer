@@ -19,15 +19,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = useState(false);
   const [showApiDialog, setShowApiDialog] = useState(false);
   const [apiKey, setApiKey] = useState('');
-  const { settings, updateSettings } = useAppStore();
+  const { settings, updateSettings, _hasHydrated } = useAppStore();
 
   useEffect(() => {
     setMounted(true);
-    // Show API key dialog if not set
-    if (!settings.replicateApiKey) {
+  }, []);
+
+  // Only show API dialog after store has loaded from localStorage
+  useEffect(() => {
+    if (_hasHydrated && !settings.replicateApiKey) {
       setShowApiDialog(true);
     }
-  }, [settings.replicateApiKey]);
+  }, [_hasHydrated, settings.replicateApiKey]);
 
   const handleSaveApiKey = () => {
     updateSettings({ replicateApiKey: apiKey });

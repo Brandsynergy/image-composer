@@ -106,7 +106,7 @@ export default function PhotoStudio() {
         if (data.error) { setError(data.error); break; }
         // API now always returns { output: "https://..." } as a plain string
         const url = typeof data.output === 'string' ? data.output : (Array.isArray(data.output) ? data.output[0] : null);
-        if (url && typeof url === 'string' && url.startsWith('http')) {
+        if (url && typeof url === 'string' && (url.startsWith('http') || url.startsWith('data:'))) {
           results.push(url);
         } else {
           setError(`Unexpected response format. Got: ${JSON.stringify(data).slice(0, 200)}`);
