@@ -18,14 +18,16 @@ import {
 import {
   Megaphone, Plus, Calendar, Image as ImageIcon, Users,
   ArrowRight, Trash2, Edit, Upload, Camera, Sparkles,
-  Download, X, Package, Eye, Type, RefreshCw,
+  Download, X, Package, Eye, Type,
 } from 'lucide-react';
 
 const PLATFORMS = ['Instagram', 'TikTok', 'YouTube', 'Twitter/X', 'LinkedIn', 'Pinterest', 'Facebook'];
 const CAMPAIGN_MOODS = ['Aspirational', 'Bold', 'Elegant', 'Playful', 'Edgy', 'Warm', 'Corporate', 'Luxurious'];
 
 // Client-side Canvas text overlay with word-wrapping
-function addCanvasTextOverlay(imageDataUrl: string, text: string): Promise<string> {
+type TextPosition = 'top' | 'center' | 'bottom';
+
+function addCanvasTextOverlay(imageDataUrl: string, text: string, position: TextPosition = 'bottom'): Promise<string> {
   return new Promise((resolve) => {
     const img = new Image();
     img.onload = () => {
@@ -38,11 +40,10 @@ function addCanvasTextOverlay(imageDataUrl: string, text: string): Promise<strin
       ctx.drawImage(img, 0, 0);
 
       const maxW = img.width * 0.85;
-      const font = (w: string, sz: number) => `${w} ${sz}px "Helvetica Neue", Helvetica, Arial, sans-serif`;
+      const mkFont = (w: string, sz: number) => `${w} ${sz}px "Helvetica Neue", Helvetica, Arial, sans-serif`;
 
-      // Word-wrap: split text into lines that fit within maxW
       function wrapLines(label: string, size: number, weight: string): string[] {
-        ctx!.font = font(weight, size);
+        ctx!.font = mkFont(weight, size);
         const words = label.split(' ');
         const lines: string[] = [];
         let cur = words[0] || '';
@@ -55,57 +56,54 @@ function addCanvasTextOverlay(imageDataUrl: string, text: string): Promise<strin
         return lines;
       }
 
-      // Split on em dash for hook / brand layout
-      const sections = text.includes('\u2014')
-        ? text.split('\u2014').map((s) => s.trim()).filter(Boolean)
-        : [text];
-
       const primarySz = Math.round(img.height * 0.045);
-      const secondarySz = Math.round(img.height * 0.03);
       const lineH = primarySz * 1.35;
-      const secLineH = secondarySz * 1.35;
+      const allLines = wrapLines(text.toUpperCase(), primarySz, '800');
 
-      const primaryLines = wrapLines(sections[0].toUpperCase(), primarySz, '800');
-      const secondaryLines = sections[1] ? wrapLines(sections[1].toUpperCase(), secondarySz, '600') : [];
-
-      // Backdrop sizing
-      const totalH = primaryLines.length * lineH
-        + (secondaryLines.length > 0 ? primarySz * 0.4 + secondaryLines.length * secLineH : 0);
       const pad = primarySz * 1.0;
-      const backdropH = totalH + pad * 2;
-      const backdropY = img.height - backdropH;
+      const backdropH = allLines.length * lineH + pad * 2;
+
+      // Position the backdrop
+      let backdropY: number;
+      if (position === 'top') {
+        backdropY = 0;
+      } else if (position === 'center') {
+        backdropY = (img.height - backdropH) / 2;
+      } else {
+        backdropY = img.height - backdropH;
+      }
 
       // Gradient backdrop
-      const grad = ctx.createLinearGradient(0, backdropY, 0, img.height);
-      grad.addColorStop(0, 'rgba(0,0,0,0)');
-      grad.addColorStop(0.2, 'rgba(0,0,0,0.6)');
-      grad.addColorStop(1, 'rgba(0,0,0,0.85)');
+      const grad = ctx.createLinearGradient(0, backdropY, 0, backdropY + backdropH);
+      if (position === 'top') {
+        grad.addColorStop(0, 'rgba(0,0,0,0.85)');
+        grad.addColorStop(0.8, 'rgba(0,0,0,0.6)');
+        grad.addColorStop(1, 'rgba(0,0,0,0)');
+      } else if (position === 'center') {
+        grad.addColorStop(0, 'rgba(0,0,0,0)');
+        grad.addColorStop(0.15, 'rgba(0,0,0,0.65)');
+        grad.addColorStop(0.85, 'rgba(0,0,0,0.65)');
+        grad.addColorStop(1, 'rgba(0,0,0,0)');
+      } else {
+        grad.addColorStop(0, 'rgba(0,0,0,0)');
+        grad.addColorStop(0.2, 'rgba(0,0,0,0.6)');
+        grad.addColorStop(1, 'rgba(0,0,0,0.85)');
+      }
       ctx.fillStyle = grad;
       ctx.fillRect(0, backdropY, img.width, backdropH);
 
+      // Render text lines
       ctx.textAlign = 'center';
+      ctx.font = mkFont('800', primarySz);
       const cx = img.width / 2;
       let y = backdropY + pad + primarySz * 0.5;
 
-      // Render primary lines
-      ctx.font = font('800', primarySz);
-      for (const line of primaryLines) {
+      for (const line of allLines) {
         ctx.fillStyle = 'rgba(0,0,0,0.5)';
         ctx.fillText(line, cx + 1.5, y + 1.5);
         ctx.fillStyle = '#FFFFFF';
         ctx.fillText(line, cx, y);
         y += lineH;
-      }
-
-      // Render secondary lines (brand)
-      if (secondaryLines.length > 0) {
-        y += primarySz * 0.15;
-        ctx.font = font('600', secondarySz);
-        for (const line of secondaryLines) {
-          ctx.fillStyle = 'rgba(255,255,255,0.7)';
-          ctx.fillText(line, cx, y);
-          y += secLineH;
-        }
       }
 
       resolve(canvas.toDataURL('image/png'));
@@ -115,23 +113,6 @@ function addCanvasTextOverlay(imageDataUrl: string, text: string): Promise<strin
   });
 }
 
-// Hook templates: kept to 2-3 words max for clean overlay rendering
-const HOOK_TEMPLATES: Record<string, string[]> = {
-  Aspirational: ['Dream Bigger', 'Rise Above', 'Reach Higher', 'Level Up', 'Aim Higher'],
-  Bold: ['Own It', 'No Limits', 'Go All In', 'Be Bold', 'Stay Strong'],
-  Elegant: ['Pure Grace', 'Stay Classy', 'True Beauty', 'So Refined', 'Simply Chic'],
-  Playful: ['Stay Wild', 'Make It Pop', 'Good Vibes', 'Stay Fun', 'Live Big'],
-  Edgy: ['Stand Out', 'Raw & Real', 'Be Fearless', 'Break Free', 'Stay Edgy'],
-  Warm: ['Feel Warm', 'Made Fresh', 'Pure Comfort', 'Stay Cozy', 'Glow Up'],
-  Corporate: ['Lead Now', 'Think Big', 'Stay Trusted', 'Go Further', 'Excel More'],
-  Luxurious: ['Pure Luxury', 'Stay Golden', 'So Premium', 'Live Grand', 'Top Tier'],
-};
-
-function generateHook(mood: string, brandName?: string): string {
-  const templates = HOOK_TEMPLATES[mood] || HOOK_TEMPLATES.Aspirational;
-  const base = templates[Math.floor(Math.random() * templates.length)];
-  return brandName ? `${base} — ${brandName}` : base;
-}
 
 export default function Campaigns() {
   const {
@@ -146,6 +127,7 @@ export default function Campaigns() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [overlayEnabled, setOverlayEnabled] = useState(false);
   const [overlayText, setOverlayText] = useState('');
+  const [overlayPosition, setOverlayPosition] = useState<TextPosition>('bottom');
   const [productDesc, setProductDesc] = useState('');
 
   // Form state
@@ -283,7 +265,7 @@ export default function Campaigns() {
         // Apply client-side Canvas text overlay (pixel-perfect, zero credits)
         if (overlayEnabled && overlayText.trim() && url) {
           try {
-            url = await addCanvasTextOverlay(url, overlayText.trim());
+            url = await addCanvasTextOverlay(url, overlayText.trim(), overlayPosition);
           } catch {
             // Overlay failed — keep original image
           }
@@ -520,26 +502,62 @@ export default function Campaigns() {
                     </div>
 
                     {overlayEnabled && (
-                      <div className="space-y-2">
-                        <div className="flex gap-2">
+                      <div className="space-y-3">
+                        {/* Text input + word counter */}
+                        <div>
                           <Input
                             value={overlayText}
                             onChange={(e) => setOverlayText(e.target.value)}
-                            placeholder="e.g. Beautiful Hair — Prettirootz"
-                            className="bg-white/5 border-white/10 text-white text-sm placeholder:text-zinc-600 flex-1"
+                            placeholder="Type your text here..."
+                            className="bg-white/5 border-white/10 text-white text-sm placeholder:text-zinc-600"
                             maxLength={80}
                           />
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setOverlayText(generateHook(detailCampaign.mood, detailCampaign.brandName))}
-                            className="text-cyan-400 hover:text-white text-xs gap-1 h-9 px-2 shrink-0"
-                            title="Auto-generate hook text"
-                          >
-                            <RefreshCw className="h-3 w-3" /> Generate
-                          </Button>
+                          <div className="flex justify-between mt-1">
+                            <p className="text-[9px] text-zinc-600">3–8 words recommended for best results</p>
+                            <p className={`text-[9px] ${overlayText.trim().split(/\s+/).filter(Boolean).length > 8 ? 'text-yellow-400' : 'text-zinc-600'}`}>
+                              {overlayText.trim() ? overlayText.trim().split(/\s+/).filter(Boolean).length : 0} words
+                            </p>
+                          </div>
                         </div>
-                        <p className="text-[10px] text-zinc-500">Use — to split hook and brand name. Long text auto-wraps.</p>
+
+                        {/* Position selector */}
+                        <div>
+                          <Label className="text-[10px] text-zinc-500 mb-1.5 block">Position</Label>
+                          <div className="flex gap-2">
+                            {(['top', 'center', 'bottom'] as const).map((pos) => (
+                              <button
+                                key={pos}
+                                onClick={() => setOverlayPosition(pos)}
+                                className={`px-3 py-1.5 rounded-lg text-[11px] font-medium border transition-all capitalize ${
+                                  overlayPosition === pos
+                                    ? 'bg-cyan-600/20 border-cyan-500/50 text-cyan-300'
+                                    : 'bg-white/[0.02] border-white/[0.06] text-zinc-500 hover:bg-white/[0.05]'
+                                }`}
+                              >
+                                {pos}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Live position preview */}
+                        {overlayText.trim() && (
+                          <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] overflow-hidden">
+                            <div className="relative w-full aspect-[4/5] bg-gradient-to-b from-zinc-800/50 to-zinc-900/50 flex items-center justify-center">
+                              <span className="text-[10px] text-zinc-700 absolute top-1/2 -translate-y-1/2">IMAGE</span>
+                              {/* Text preview bar */}
+                              <div
+                                className={`absolute left-0 right-0 px-3 py-2 bg-black/60 flex items-center justify-center ${
+                                  overlayPosition === 'top' ? 'top-0' : overlayPosition === 'center' ? 'top-1/2 -translate-y-1/2' : 'bottom-0'
+                                }`}
+                              >
+                                <span className="text-[9px] font-bold text-white text-center leading-tight uppercase truncate">
+                                  {overlayText.trim()}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
