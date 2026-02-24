@@ -41,6 +41,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <Sidebar />
           <main className="flex-1 transition-all duration-300 md:ml-[240px]">
             <div className="px-4 pt-[72px] pb-20 md:px-6 md:pt-6 md:pb-6">{children}</div>
+            <footer className="border-t border-white/[0.06] py-6 text-center md:ml-0">
+              <p className="text-[11px] text-zinc-600">© 2026 a Mediad Innovation</p>
+            </footer>
           </main>
         </div>
       </TooltipProvider>

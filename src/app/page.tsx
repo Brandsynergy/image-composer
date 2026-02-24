@@ -23,7 +23,7 @@ export default function Dashboard() {
         <div className="absolute right-0 top-0 h-64 w-64 bg-violet-500/10 blur-[100px]" />
         <div className="relative">
           <div className="flex items-center gap-2 mb-2">
-            <Sparkles className="h-5 w-5 text-violet-400" />
+            <img src="/icons/icon-192.png" alt="" className="h-6 w-6 rounded" />
             <span className="text-sm font-medium text-violet-400">IMAGE COMPOSER Studio</span>
           </div>
           <h1 className="text-3xl font-bold tracking-tight text-white mb-2">Create Viral AI Models</h1>
@@ -151,8 +151,8 @@ export default function Dashboard() {
       {/* Empty State */}
       {models.length === 0 && images.length === 0 && (
         <div className="text-center py-16">
-          <div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-600/20 to-fuchsia-600/20 flex items-center justify-center mb-4">
-            <Sparkles className="h-8 w-8 text-violet-400" />
+          <div className="mx-auto w-16 h-16 rounded-2xl overflow-hidden mb-4">
+            <img src="/icons/icon-192.png" alt="IMAGE COMPOSER" className="h-16 w-16 object-cover" />
           </div>
           <h3 className="text-lg font-semibold text-white mb-2">Welcome to IMAGE COMPOSER</h3>
           <p className="text-zinc-400 max-w-md mx-auto mb-6">Create your first AI model to start generating viral-ready content.</p>
