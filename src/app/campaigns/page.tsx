@@ -18,11 +18,28 @@ import {
 import {
   Megaphone, Plus, Calendar, Image as ImageIcon, Users,
   ArrowRight, Trash2, Edit, Upload, Camera, Sparkles,
-  Download, X, Package, Eye,
+  Download, X, Package, Eye, Type, RefreshCw,
 } from 'lucide-react';
 
 const PLATFORMS = ['Instagram', 'TikTok', 'YouTube', 'Twitter/X', 'LinkedIn', 'Pinterest', 'Facebook'];
 const CAMPAIGN_MOODS = ['Aspirational', 'Bold', 'Elegant', 'Playful', 'Edgy', 'Warm', 'Corporate', 'Luxurious'];
+
+const HOOK_TEMPLATES: Record<string, string[]> = {
+  Aspirational: ['Dream Bigger', 'Elevate Everything', 'Rise Above', 'Your Best Self Awaits', 'Reach Higher'],
+  Bold: ['Own the Moment', 'Be Unstoppable', 'No Limits', 'Break the Rules', 'Go All In'],
+  Elegant: ['Timeless Beauty', 'Pure Sophistication', 'Effortless Grace', 'Refined Luxury', 'Simply Stunning'],
+  Playful: ["Life's a Vibe", 'Make It Pop', 'Stay Wild', 'Good Times Only', 'Fun Never Stops'],
+  Edgy: ['Defy the Norm', 'Stand Out', 'Raw & Real', 'Unapologetically You', 'Dare to Be Different'],
+  Warm: ['Feel the Warmth', 'Made with Love', 'Home Is Here', 'Comfort Redefined', 'Embrace the Glow'],
+  Corporate: ['Lead the Future', 'Built for Excellence', 'Trusted by Many', 'Innovation Starts Here', 'Results That Matter'],
+  Luxurious: ['Indulge Yourself', 'The Finest Things', 'Beyond Ordinary', 'Unmatched Elegance', 'Worth Every Moment'],
+};
+
+function generateHook(mood: string, brandName?: string): string {
+  const templates = HOOK_TEMPLATES[mood] || HOOK_TEMPLATES.Aspirational;
+  const base = templates[Math.floor(Math.random() * templates.length)];
+  return brandName ? `${base} — ${brandName}` : base;
+}
 
 export default function Campaigns() {
   const {
@@ -35,6 +52,8 @@ export default function Campaigns() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [genError, setGenError] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [overlayEnabled, setOverlayEnabled] = useState(false);
+  const [overlayText, setOverlayText] = useState('');
 
   // Form state
   const [name, setName] = useState('');
@@ -160,6 +179,7 @@ export default function Campaigns() {
           outputFormat: 'png',
           outputQuality: 95,
           enhance: true,
+          ...(overlayEnabled && overlayText.trim() ? { overlayText: overlayText.trim() } : {}),
         }),
       });
 
@@ -362,6 +382,51 @@ export default function Campaigns() {
                         <span className="text-xs font-medium">Upload product images</span>
                         <span className="text-[10px] mt-0.5">PNG, JPG up to 10MB</span>
                       </button>
+                    )}
+                  </div>
+
+                  <Separator className="bg-white/[0.06]" />
+
+                  {/* Text Overlay */}
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+                        <Type className="h-4 w-4 text-cyan-400" /> Text Overlay
+                      </h3>
+                      <button
+                        onClick={() => setOverlayEnabled(!overlayEnabled)}
+                        className={`w-10 h-[22px] rounded-full transition-colors ${
+                          overlayEnabled ? 'bg-cyan-600' : 'bg-zinc-700'
+                        }`}
+                      >
+                        <div className={`w-[18px] h-[18px] rounded-full bg-white transition-transform mx-0.5 ${
+                          overlayEnabled ? 'translate-x-[18px]' : 'translate-x-0'
+                        }`} />
+                      </button>
+                    </div>
+
+                    {overlayEnabled && (
+                      <div className="space-y-2">
+                        <div className="flex gap-2">
+                          <Input
+                            value={overlayText}
+                            onChange={(e) => setOverlayText(e.target.value)}
+                            placeholder="e.g. Dream Bigger — Nike"
+                            className="bg-white/5 border-white/10 text-white text-sm placeholder:text-zinc-600 flex-1"
+                            maxLength={60}
+                          />
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setOverlayText(generateHook(detailCampaign.mood, detailCampaign.brandName))}
+                            className="text-cyan-400 hover:text-white text-xs gap-1 h-9 px-2 shrink-0"
+                            title="Auto-generate hook text"
+                          >
+                            <RefreshCw className="h-3 w-3" /> Generate
+                          </Button>
+                        </div>
+                        <p className="text-[10px] text-zinc-500">AI will render this text as a bold headline overlay on the final image.</p>
+                      </div>
                     )}
                   </div>
 

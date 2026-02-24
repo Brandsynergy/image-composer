@@ -158,6 +158,7 @@ export async function POST(req: NextRequest) {
       steps,
       guidance,
       enhance = true,
+      overlayText = '',
     } = body;
 
     if (!apiKey) {
@@ -239,6 +240,41 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // ── Text overlay pass: add punchy hook text via Kontext Pro ──
+    let hasOverlay = false;
+
+    if (overlayText && typeof overlayText === 'string' && overlayText.trim()) {
+      try {
+        const overlayPrompt = [
+          `Add the text "${overlayText.trim()}" as a bold, modern advertising headline overlay on this image.`,
+          'Use a clean, high-impact sans-serif typeface. Make the text large and prominent.',
+          'Add a subtle drop shadow or semi-transparent backdrop behind the text for readability.',
+          'Position the text in a visually balanced location that does not obscure the subject\'s face.',
+          'Keep the exact same image, pose, lighting, and composition underneath.',
+        ].join(' ');
+
+        const overlayOutput = await replicate.run(
+          MODEL_MAP['flux-kontext-pro'],
+          {
+            input: {
+              prompt: overlayPrompt,
+              input_image: finalUrl,
+              aspect_ratio: 'match_input_image',
+              output_format: 'png',
+              safety_tolerance: 2,
+            },
+          }
+        );
+        const overlayUrl = extractUrl(overlayOutput);
+        if (overlayUrl) {
+          finalUrl = overlayUrl;
+          hasOverlay = true;
+        }
+      } catch (overlayErr) {
+        console.warn('Text overlay pass failed, returning image without text:', overlayErr instanceof Error ? overlayErr.message : overlayErr);
+      }
+    }
+
     // Convert to base64 data URL so the image persists in localStorage
     // (Replicate delivery URLs expire after a few hours)
     let permanentUrl = finalUrl;
@@ -249,7 +285,7 @@ export async function POST(req: NextRequest) {
       console.warn('Could not convert to data URL, returning temporary Replicate URL');
     }
 
-    return NextResponse.json({ output: permanentUrl, model: result.model, enhanced });
+    return NextResponse.json({ output: permanentUrl, model: result.model, enhanced, hasOverlay });
   } catch (error) {
     console.error('Generation error:', error);
     return NextResponse.json(

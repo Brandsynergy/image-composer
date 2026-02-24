@@ -25,7 +25,7 @@ import {
   Camera, Sparkles, Wand2, Download, Heart, Users, Zap,
   Sun, MapPin, PersonStanding, Shirt, Aperture, Move3D,
   Palette, Clock, ImageIcon, RotateCcw, Copy, Trash2,
-  FolderPlus, Megaphone, Check,
+  FolderPlus, Megaphone, Check, Type,
 } from 'lucide-react';
 
 function OptionPicker({ options, value, onChange }: { options: string[]; value: string; onChange: (v: string) => void }) {
@@ -67,6 +67,8 @@ export default function PhotoStudio() {
   const [flexSteps, setFlexSteps] = useState(28);
   const [flexGuidance, setFlexGuidance] = useState(3.5);
   const [enhance, setEnhance] = useState(true);
+  const [overlayEnabled, setOverlayEnabled] = useState(false);
+  const [overlayText, setOverlayText] = useState('');
 
   const selectedModel = models.find((m) => m.id === selectedModelId);
 
@@ -102,6 +104,7 @@ export default function PhotoStudio() {
             outputFormat,
             outputQuality,
             enhance,
+            ...(overlayEnabled && overlayText.trim() ? { overlayText: overlayText.trim() } : {}),
             ...(engine === 'flux-2-pro' ? { promptUpsampling } : {}),
             ...(engine === 'flux-1.1-pro-ultra' ? { raw: rawMode } : {}),
             ...(engine === 'flux-2-flex' ? { steps: flexSteps, guidance: flexGuidance } : {}),
@@ -411,6 +414,40 @@ export default function PhotoStudio() {
                     ))}
                   </div>
                 </FieldGroup>
+
+                {/* Text Overlay */}
+                <div className="rounded-lg border border-cyan-500/20 bg-gradient-to-r from-cyan-600/5 to-blue-600/5 p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
+                        <Type className="h-3.5 w-3.5 text-white" />
+                      </div>
+                      <div>
+                        <span className="text-[11px] font-semibold text-white block">Text Overlay</span>
+                        <span className="text-[9px] text-zinc-500">Bold hook text on image</span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setOverlayEnabled(!overlayEnabled)}
+                      className={`w-10 h-[22px] rounded-full transition-colors ${
+                        overlayEnabled ? 'bg-cyan-600' : 'bg-zinc-700'
+                      }`}
+                    >
+                      <div className={`w-[18px] h-[18px] rounded-full bg-white transition-transform mx-0.5 ${
+                        overlayEnabled ? 'translate-x-[18px]' : 'translate-x-0'
+                      }`} />
+                    </button>
+                  </div>
+                  {overlayEnabled && (
+                    <Input
+                      value={overlayText}
+                      onChange={(e) => setOverlayText(e.target.value)}
+                      placeholder="e.g. Own the Moment"
+                      className="bg-white/5 border-white/10 text-white text-xs placeholder:text-zinc-600 h-8"
+                      maxLength={60}
+                    />
+                  )}
+                </div>
 
                 {/* Premium Enhancement */}
                 <div className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-violet-600/10 to-fuchsia-600/10 border border-violet-500/20">
