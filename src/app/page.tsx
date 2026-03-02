@@ -1,17 +1,22 @@
 'use client';
 
+import { useState } from 'react';
 import { useAppStore } from '@/lib/store';
+import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { AuthDialog } from '@/components/auth/auth-dialog';
 import Link from 'next/link';
 import {
   UserPlus, Camera, Image as ImageIcon, Sparkles, ArrowRight,
-  Users, Heart, Clock, Coins, LogIn, CreditCard, Wand2, Download,
+  Users, Heart, Clock, Coins, LogIn, LogOut, CreditCard, Wand2, Download,
 } from 'lucide-react';
 
 export default function Dashboard() {
-  const { models, images, settings } = useAppStore();
+  const { models, images, settings, user } = useAppStore();
+  const [showAuth, setShowAuth] = useState(false);
+  const [authMode, setAuthMode] = useState<'signIn' | 'signUp'>('signIn');
   const favoriteCount = images.filter((i) => i.isFavorite).length;
   const recentImages = images.slice(0, 8);
   const recentModels = models.slice(0, 4);
@@ -30,7 +35,7 @@ export default function Dashboard() {
           <p className="text-zinc-400 max-w-xl mb-6">
             Build hyper-realistic AI personas and generate stunning content that stops the scroll.
           </p>
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
             <Button asChild className="bg-violet-600 hover:bg-violet-700 text-white gap-2">
               <Link href="/create"><UserPlus className="h-4 w-4" />Create New Model</Link>
             </Button>
@@ -40,6 +45,61 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* Auth Section — prominent sign in / sign up / sign out */}
+      <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6">
+        {user ? (
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-violet-600 to-fuchsia-500 text-sm font-bold text-white">
+                {user.name.split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2)}
+              </div>
+              <div>
+                <p className="text-sm font-medium text-white">{user.name}</p>
+                <p className="text-xs text-zinc-400">{user.email}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="text-xs text-zinc-400">
+                <span className="text-white font-semibold">{settings.credits}</span> credits remaining
+              </div>
+              <Button
+                onClick={async () => { const sb = createClient(); await sb.auth.signOut(); }}
+                variant="outline"
+                size="sm"
+                className="border-red-500/20 text-red-400 hover:bg-red-500/10 hover:text-red-300 gap-2"
+              >
+                <LogOut className="h-4 w-4" /> Sign Out
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <h3 className="text-base font-semibold text-white mb-1">Get Started</h3>
+              <p className="text-sm text-zinc-400">Sign in to your account or create a new one to start generating.</p>
+            </div>
+            <div className="flex gap-3">
+              <Button
+                onClick={() => { setAuthMode('signIn'); setShowAuth(true); }}
+                className="bg-violet-600 hover:bg-violet-700 text-white gap-2"
+              >
+                <LogIn className="h-4 w-4" /> Sign In
+              </Button>
+              <Button
+                onClick={() => { setAuthMode('signUp'); setShowAuth(true); }}
+                variant="outline"
+                className="border-white/10 text-white hover:bg-white/5 gap-2"
+              >
+                <UserPlus className="h-4 w-4" /> Sign Up
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Auth Dialog */}
+      <AuthDialog open={showAuth} onOpenChange={setShowAuth} defaultMode={authMode} />
 
       {/* How It Works */}
       <div>
